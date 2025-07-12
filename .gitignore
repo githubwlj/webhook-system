@@ -1,0 +1,56 @@
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Production data (IMPORTANT: Don't upload user data!)
+data/
+logs/
+*.log
+
+# Environment variables (IMPORTANT: Contains secrets!)
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+
+# PM2 runtime files
+.pm2/
+ecosystem.config.js
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+# SSL certificates (if any)
+*.pem
+*.key
+*.crt
+
+# Coverage directory used by tools like istanbul
+coverage/
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock

@@ -1,0 +1,1540 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理后台 - Webhook系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f6fa;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1rem 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .logout-btn {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .logout-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .nav-tabs {
+            display: flex;
+            background: white;
+            border-radius: 10px;
+            padding: 5px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .nav-tab {
+            flex: 1;
+            padding: 15px;
+            text-align: center;
+            background: transparent;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            color: #666;
+        }
+
+        .nav-tab.active {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            border: 1px solid #e3e8ee;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f8f9fa;
+        }
+
+        .card-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(220, 53, 69, 0.4);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #555;
+        }
+
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .table th, .table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e3e8ee;
+        }
+
+        .table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #555;
+        }
+
+        .table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .status-badge {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .status-active {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-inactive {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(5px);
+        }
+
+        .modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .close {
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            color: #999;
+        }
+
+        .close:hover {
+            color: #333;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            border: 1px solid #e3e8ee;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid transparent;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border-color: #c3e6cb;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border-color: #f5c6cb;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .copy-btn {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            margin-left: 5px;
+        }
+
+        .copy-btn:hover {
+            background: #5a6268;
+        }
+
+        .docs-section {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .docs-section h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+
+        .docs-section pre {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+            border: 1px solid #e9ecef;
+        }
+
+        .docs-section code {
+            background: #f8f9fa;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .nav-tabs {
+                flex-direction: column;
+            }
+
+            .nav-tab {
+                margin-bottom: 5px;
+            }
+
+            .card {
+                padding: 15px;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <div class="logo">🚀 Webhook管理系统</div>
+            <div class="user-info">
+                <span>👤 管理员</span>
+                <button class="logout-btn" onclick="logout()">退出登录</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="nav-tabs">
+            <button class="nav-tab active" data-tab="overview">📊 概览</button>
+            <button class="nav-tab" data-tab="tokens">🔑 令牌管理</button>
+            <button class="nav-tab" data-tab="webhooks">📡 Webhook管理</button>
+            <button class="nav-tab" data-tab="logs">📋 日志查看</button>
+            <button class="nav-tab" data-tab="profile">👤 账户管理</button>
+            <button class="nav-tab" data-tab="docs">📚 文档中心</button>
+        </div>
+
+        <div id="message"></div>
+
+        <!-- 概览页面 -->
+        <div id="overview" class="tab-content active">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number" id="totalTokens">-</div>
+                    <div class="stat-label">总令牌数</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="activeTokens">-</div>
+                    <div class="stat-label">活跃令牌</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="totalWebhooks">-</div>
+                    <div class="stat-label">Webhook总数</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="todayRequests">-</div>
+                    <div class="stat-label">今日请求</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">🔧 系统状态</h2>
+                    <button class="btn btn-primary" id="refreshStatsBtn">刷新数据</button>
+                </div>
+                <div class="loading" id="statsLoading">
+                    <div class="spinner"></div>
+                    <p>加载中...</p>
+                </div>
+                <div id="systemStatus"></div>
+            </div>
+        </div>
+
+        <!-- 令牌管理页面 -->
+        <div id="tokens" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">🔑 令牌管理</h2>
+                    <button class="btn btn-primary" id="openTokenModalBtn">新建令牌</button>
+                </div>
+                <div class="loading" id="tokensLoading">
+                    <div class="spinner"></div>
+                    <p>加载中...</p>
+                </div>
+                <table class="table" id="tokensTable">
+                    <thead>
+                        <tr>
+                            <th>名称</th>
+                            <th>类型</th>
+                            <th>状态</th>
+                            <th>创建时间</th>
+                            <th>最后使用</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tokensTableBody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Webhook管理页面 -->
+        <div id="webhooks" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">📡 Webhook接收器管理</h2>
+                    <button class="btn btn-primary" id="openWebhookModalBtn">新建接收器</button>
+                </div>
+                
+                <!-- 接收器使用说明 -->
+                <div class="alert" style="background: #e3f2fd; color: #1565c0; border-color: #bbdefb; margin-bottom: 20px;">
+                    <h4>💡 Webhook接收器说明</h4>
+                    <p><strong>通用接收器：</strong> <code>http://localhost:6997/webhook</code> - 接收所有类型的webhook通知</p>
+                    <p><strong>指定接收器：</strong> <code>http://localhost:6997/webhook/receive/{ID}</code> - 接收特定类型的通知</p>
+                    <p><strong>应用场景：</strong> 不同业务模块、不同系统、不同环境的webhook隔离管理</p>
+                </div>
+                
+                <div class="loading" id="webhooksLoading">
+                    <div class="spinner"></div>
+                    <p>加载中...</p>
+                </div>
+                <table class="table" id="webhooksTable">
+                    <thead>
+                        <tr>
+                            <th>接收器ID</th>
+                            <th>描述</th>
+                            <th>完整URL</th>
+                            <th>密钥保护</th>
+                            <th>创建时间</th>
+                            <th>使用次数</th>
+                            <th>最后使用</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="webhooksTableBody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 日志查看页面 -->
+        <div id="logs" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">📋 系统日志</h2>
+                    <button class="btn btn-primary" id="refreshLogsBtn">刷新日志</button>
+                </div>
+                <div class="loading" id="logsLoading">
+                    <div class="spinner"></div>
+                    <p>加载中...</p>
+                </div>
+                <div id="logsContainer">
+                </div>
+            </div>
+        </div>
+
+        <!-- 账户管理页面 -->
+        <div id="profile" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">👤 账户管理</h2>
+                </div>
+                <div class="stats-grid" style="margin-bottom: 20px;">
+                    <div class="stat-card">
+                        <div class="stat-number" id="currentUsername">-</div>
+                        <div class="stat-label">当前用户</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="lastLoginTime">-</div>
+                        <div class="stat-label">最后登录</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="loginCount">-</div>
+                        <div class="stat-label">登录次数</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="accountStatus">活跃</div>
+                        <div class="stat-label">账户状态</div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">🔐 修改密码</h3>
+                    </div>
+                    <form id="changePasswordForm" style="max-width: 400px;">
+                        <div class="form-group">
+                            <label for="currentPassword">当前密码</label>
+                            <input type="password" id="currentPassword" name="currentPassword" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="newPassword">新密码</label>
+                            <input type="password" id="newPassword" name="newPassword" required minlength="6">
+                        </div>
+                        <div class="form-group">
+                            <label for="confirmPassword">确认新密码</label>
+                            <input type="password" id="confirmPassword" name="confirmPassword" required minlength="6">
+                        </div>
+                        <button type="submit" class="btn btn-primary">修改密码</button>
+                    </form>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">🛡️ 安全设置</h3>
+                    </div>
+                    <div style="padding: 20px 0;">
+                        <div style="margin-bottom: 15px;">
+                            <strong>会话管理:</strong>
+                            <button class="btn btn-secondary" id="logoutAllBtn" style="margin-left: 10px;">注销所有会话</button>
+                        </div>
+                        <div style="margin-bottom: 15px;">
+                            <strong>登录日志:</strong>
+                            <button class="btn btn-secondary" id="viewLoginLogsBtn" style="margin-left: 10px;">查看登录记录</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 文档中心页面 -->
+        <div id="docs" class="tab-content">
+            <div class="docs-section">
+                <h3>📚 API文档</h3>
+                <p>完整的Webhook系统API文档和使用指南</p>
+                
+                <h4>🔗 基础信息</h4>
+                <p><strong>服务器地址:</strong> <code>https://webhook.itdb.top</code></p>
+                <p><strong>API版本:</strong> v1.0</p>
+                <p><strong>认证方式:</strong> Bearer Token</p>
+                
+                <h4>📡 接收Webhook</h4>
+                <p>POST请求到以下地址接收webhook数据：</p>
+                <pre><code>https://webhook.itdb.top/webhook/receive/{WEBHOOK_ID}</code></pre>
+                
+                <h4>📤 发送Webhook</h4>
+                <p>POST请求到以下地址发送webhook：</p>
+                <pre><code>POST https://webhook.itdb.top/webhook/send
+Content-Type: application/json
+Authorization: Bearer YOUR_TOKEN
+
+{
+  "url": "https://example.com/webhook",
+  "payload": {
+    "message": "Hello World",
+    "timestamp": "2024-01-01T00:00:00Z"
+  },
+  "secret": "your_secret_key"
+}</code></pre>
+                
+                <h4>🔐 身份验证</h4>
+                <p>系统支持多种令牌类型：</p>
+                <ul>
+                    <li><strong>管理员令牌:</strong> 完全访问权限</li>
+                    <li><strong>UI访问令牌:</strong> 仅可访问监控界面</li>
+                    <li><strong>API访问令牌:</strong> 仅可调用API接口</li>
+                    <li><strong>Webhook密钥:</strong> 用于签名验证</li>
+                </ul>
+                
+                <h4>🛡️ 安全特性</h4>
+                <ul>
+                    <li>请求频率限制</li>
+                    <li>签名验证</li>
+                    <li>访问日志记录</li>
+                    <li>IP白名单（可选）</li>
+                </ul>
+                
+                <h4>📊 监控统计</h4>
+                <p>系统提供完整的监控数据：</p>
+                <ul>
+                    <li>请求成功率统计</li>
+                    <li>响应时间监控</li>
+                    <li>错误日志分析</li>
+                    <li>实时活动监控</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- 令牌模态框 -->
+    <div id="tokenModal" class="modal">
+        <div class="modal-content">
+            <span class="close" id="closeTokenModal">&times;</span>
+            <h2 id="tokenModalTitle">🔑 令牌管理</h2>
+            <form id="tokenForm">
+                <input type="hidden" id="tokenId" name="id">
+                <div class="form-group">
+                    <label for="tokenName">令牌名称</label>
+                    <input type="text" id="tokenName" name="name" required>
+                </div>
+                <div class="form-group" id="tokenTypeGroup">
+                    <label for="tokenType">令牌类型</label>
+                    <select id="tokenType" name="type" required>
+                        <option value="">请选择类型</option>
+                        <option value="admin">管理员令牌</option>
+                        <option value="ui_access">UI访问令牌</option>
+                        <option value="api_access">API访问令牌</option>
+                        <option value="webhook_secret">Webhook密钥</option>
+                    </select>
+                </div>
+                <div class="form-group" id="primaryUIGroup" style="display: none;">
+                    <label>
+                        <input type="checkbox" id="isPrimary" name="is_primary" value="true">
+                        设为主要UI访问令牌
+                    </label>
+                    <small style="display: block; color: #666; margin-top: 5px;">
+                        主要令牌用于系统默认的UI访问，只能设置一个
+                    </small>
+                </div>
+                <div class="form-group">
+                    <label for="tokenDescription">描述</label>
+                    <textarea id="tokenDescription" name="description" rows="3"></textarea>
+                </div>
+                <div class="form-group" id="tokenExpiryGroup">
+                    <label for="tokenExpiry">过期时间</label>
+                    <select id="tokenExpiry" name="expiry">
+                        <option value="">永不过期</option>
+                        <option value="30">30天</option>
+                        <option value="90">90天</option>
+                        <option value="365">1年</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary" id="tokenSubmitBtn">创建令牌</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Webhook模态框 -->
+    <div id="webhookModal" class="modal">
+        <div class="modal-content">
+            <span class="close" id="closeWebhookModal">&times;</span>
+            <h2>📡 Webhook接收器配置</h2>
+            <form id="webhookForm">
+                <div class="form-group">
+                    <label for="webhookId">接收器ID *</label>
+                    <input type="text" id="webhookId" name="id" required 
+                           pattern="[a-zA-Z0-9_-]+" 
+                           placeholder="例如: payment-system, user-notifications">
+                    <small style="color: #666;">只能包含字母、数字、下划线和横线，用于生成接收URL</small>
+                </div>
+                <div class="form-group">
+                    <label for="webhookDescription">描述 *</label>
+                    <textarea id="webhookDescription" name="description" rows="2" required
+                              placeholder="描述这个接收器的用途，例如：支付系统回调通知"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="webhookSecret">签名密钥（可选）</label>
+                    <input type="password" id="webhookSecret" name="secret" 
+                           placeholder="用于验证webhook请求的HMAC签名">
+                    <small style="color: #666;">建议设置密钥以提高安全性，支持HMAC-SHA256签名验证</small>
+                </div>
+                
+                <!-- 预览URL -->
+                <div class="form-group">
+                    <label>生成的接收URL</label>
+                    <div style="background: #f8f9fa; padding: 10px; border-radius: 6px; border: 1px solid #e9ecef;">
+                        <code id="previewUrl">http://localhost:6997/webhook/receive/[接收器ID]</code>
+                    </div>
+                    <small style="color: #666;">第三方系统将向此URL发送POST请求</small>
+                </div>
+                
+                <div style="margin-top: 20px;">
+                    <button type="submit" class="btn btn-primary">创建接收器</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeWebhookModal()" style="margin-left: 10px;">取消</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = window.location.origin;
+        const TOKEN = new URLSearchParams(window.location.search).get('token');
+        
+        if (!TOKEN) {
+            window.location.href = `${API_BASE}/admin`;
+        }
+
+        // 全局变量
+        let tokens = [];
+        let webhooks = [];
+        let logs = [];
+
+        // 通用函数
+        function showMessage(message, type = 'error') {
+            const messageDiv = document.getElementById('message');
+            messageDiv.innerHTML = `<div class="alert alert-${type}">${message}</div>`;
+            setTimeout(() => {
+                messageDiv.innerHTML = '';
+            }, 5000);
+        }
+
+        async function fetchWithAuth(url, options = {}) {
+            const response = await fetch(url, {
+                ...options,
+                headers: {
+                    'Authorization': `Bearer ${TOKEN}`,
+                    'Content-Type': 'application/json',
+                    ...options.headers
+                }
+            });
+            
+            if (response.status === 401 || response.status === 403) {
+                window.location.href = `${API_BASE}/admin`;
+                return;
+            }
+            
+            return response;
+        }
+
+        function showTab(tabName) {
+            // 隐藏所有tab内容
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // 移除所有tab的active类
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // 显示指定tab
+            document.getElementById(tabName).classList.add('active');
+            
+            // 添加active类到对应的tab按钮
+            document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+            
+            // 根据tab加载相应数据
+            switch(tabName) {
+                case 'overview':
+                    loadOverview();
+                    break;
+                case 'tokens':
+                    loadTokens();
+                    break;
+                case 'webhooks':
+                    loadWebhooks();
+                    break;
+                case 'logs':
+                    loadLogs();
+                    break;
+                case 'profile':
+                    loadProfile();
+                    break;
+            }
+        }
+
+        function logout() {
+            if (confirm('确定要退出登录吗？')) {
+                window.location.href = `${API_BASE}/admin`;
+            }
+        }
+
+        // 账户管理相关函数
+        async function loadProfile() {
+            try {
+                const response = await fetchWithAuth(`${API_BASE}/admin/profile`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    document.getElementById('currentUsername').textContent = data.username || 'admin';
+                    document.getElementById('lastLoginTime').textContent = data.lastLogin ? 
+                        formatDate(data.lastLogin) : '首次登录';
+                    document.getElementById('loginCount').textContent = data.loginCount || '1';
+                } else {
+                    throw new Error(data.message || '加载失败');
+                }
+            } catch (error) {
+                console.error('加载账户信息失败:', error);
+                // 使用默认值
+                document.getElementById('currentUsername').textContent = 'admin';
+                document.getElementById('lastLoginTime').textContent = '刚刚';
+                document.getElementById('loginCount').textContent = '1';
+            }
+        }
+
+        async function changePassword(currentPassword, newPassword) {
+            try {
+                const response = await fetchWithAuth(`${API_BASE}/admin/change-password`, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        currentPassword,
+                        newPassword
+                    })
+                });
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showMessage('密码修改成功，请重新登录', 'success');
+                    setTimeout(() => {
+                        window.location.href = `${API_BASE}/admin`;
+                    }, 2000);
+                } else {
+                    throw new Error(data.message || '修改失败');
+                }
+            } catch (error) {
+                showMessage('密码修改失败: ' + error.message);
+            }
+        }
+
+        // 概览相关函数
+        async function loadOverview() {
+            const loading = document.getElementById('statsLoading');
+            loading.style.display = 'block';
+            
+            try {
+                const response = await fetchWithAuth(`${API_BASE}/admin/stats`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    document.getElementById('totalTokens').textContent = data.totalTokens || 0;
+                    document.getElementById('activeTokens').textContent = data.activeTokens || 0;
+                    document.getElementById('totalWebhooks').textContent = data.totalWebhooks || 0;
+                    document.getElementById('todayRequests').textContent = data.todayRequests || 0;
+                    
+                    document.getElementById('systemStatus').innerHTML = `
+                        <div class="alert alert-success">
+                            🟢 系统运行正常 | 运行时间: ${data.uptime || 'N/A'} | 内存使用: ${data.memory || 'N/A'}
+                        </div>
+                    `;
+                } else {
+                    throw new Error(data.message || '加载失败');
+                }
+            } catch (error) {
+                showMessage('加载统计数据失败: ' + error.message);
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+
+        function refreshStats() {
+            loadOverview();
+        }
+
+        // 令牌管理相关函数
+        async function loadTokens() {
+            const loading = document.getElementById('tokensLoading');
+            loading.style.display = 'block';
+            
+            try {
+                const response = await fetchWithAuth(`${API_BASE}/admin/tokens`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    tokens = data.tokens || [];
+                    renderTokensTable();
+                } else {
+                    throw new Error(data.message || '加载失败');
+                }
+            } catch (error) {
+                showMessage('加载令牌列表失败: ' + error.message);
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+
+        function renderTokensTable() {
+            const tbody = document.getElementById('tokensTableBody');
+            
+            if (tokens.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #666;">暂无令牌</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = tokens.map(token => `
+                <tr>
+                    <td>
+                        ${token.name}
+                        ${token.type === 'ui_access' && token.is_primary ? 
+                            '<span style="background: #667eea; color: white; padding: 2px 6px; border-radius: 3px; font-size: 11px; margin-left: 5px;">主要</span>' : 
+                            ''
+                        }
+                    </td>
+                    <td>${getTokenTypeLabel(token.type)}</td>
+                    <td><span class="status-badge ${token.status === 'active' ? 'status-active' : 'status-inactive'}">${getStatusLabel(token.status)}</span></td>
+                    <td>${formatDate(token.createdAt)}</td>
+                    <td>${token.lastUsed ? formatDate(token.lastUsed) : '未使用'}</td>
+                    <td>
+                        <button class="btn btn-secondary copy-token-btn" data-token-id="${token.id}">复制</button>
+                        ${token.type === 'admin' ? 
+                            `<button class="btn btn-primary edit-token-btn" data-token-id="${token.id}">编辑</button>` : 
+                            `<button class="btn btn-danger delete-token-btn" data-token-id="${token.id}">${token.type === 'webhook_secret' ? '软删除' : '删除'}</button>`
+                        }
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function getTokenTypeLabel(type) {
+            const labels = {
+                'admin': '管理员',
+                'ui_access': 'UI访问',
+                'api_access': 'API访问',
+                'webhook_secret': 'Webhook密钥'
+            };
+            return labels[type] || type;
+        }
+
+        function getStatusLabel(status) {
+            const labels = {
+                'active': '活跃',
+                'disabled': '禁用',
+                'deleted': '已删除'
+            };
+            return labels[status] || status;
+        }
+
+        function formatDate(dateString) {
+            return new Date(dateString).toLocaleString('zh-CN');
+        }
+
+        function openTokenModal() {
+            document.getElementById('tokenModal').classList.add('show');
+            document.getElementById('tokenModalTitle').textContent = '🔑 新建令牌';
+            document.getElementById('tokenSubmitBtn').textContent = '创建令牌';
+            document.getElementById('tokenTypeGroup').style.display = 'block';
+            document.getElementById('tokenExpiryGroup').style.display = 'block';
+            document.getElementById('primaryUIGroup').style.display = 'none';
+            document.getElementById('tokenId').value = '';
+        }
+
+        function openEditTokenModal(tokenId) {
+            const token = tokens.find(t => t.id === tokenId);
+            if (!token) return;
+            
+            document.getElementById('tokenModal').classList.add('show');
+            document.getElementById('tokenModalTitle').textContent = '✏️ 编辑令牌';
+            document.getElementById('tokenSubmitBtn').textContent = '更新令牌';
+            
+            // 填充表单数据
+            document.getElementById('tokenId').value = token.id;
+            document.getElementById('tokenName').value = token.name;
+            document.getElementById('tokenDescription').value = token.description || '';
+            
+            // 对于管理员令牌，隐藏类型和过期时间选择
+            if (token.type === 'admin') {
+                document.getElementById('tokenTypeGroup').style.display = 'none';
+                document.getElementById('tokenExpiryGroup').style.display = 'none';
+                document.getElementById('primaryUIGroup').style.display = 'none';
+            } else {
+                document.getElementById('tokenTypeGroup').style.display = 'block';
+                document.getElementById('tokenExpiryGroup').style.display = 'block';
+                document.getElementById('tokenType').value = token.type;
+                
+                // 显示UI令牌的主要设置
+                if (token.type === 'ui_access') {
+                    document.getElementById('primaryUIGroup').style.display = 'block';
+                    document.getElementById('isPrimary').checked = token.is_primary || false;
+                } else {
+                    document.getElementById('primaryUIGroup').style.display = 'none';
+                }
+            }
+        }
+
+        function closeTokenModal() {
+            document.getElementById('tokenModal').classList.remove('show');
+            document.getElementById('tokenForm').reset();
+            document.getElementById('tokenTypeGroup').style.display = 'block';
+            document.getElementById('tokenExpiryGroup').style.display = 'block';
+            document.getElementById('primaryUIGroup').style.display = 'none';
+        }
+
+        async function copyToken(tokenId) {
+            try {
+                const response = await fetchWithAuth(`${API_BASE}/admin/tokens/${tokenId}/reveal`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    await navigator.clipboard.writeText(data.token);
+                    showMessage('令牌已复制到剪贴板', 'success');
+                } else {
+                    throw new Error(data.message || '获取令牌失败');
+                }
+            } catch (error) {
+                showMessage('复制令牌失败: ' + error.message);
+            }
+        }
+
+        async function updateToken(tokenId, tokenData) {
+            try {
+                const response = await fetchWithAuth(`${API_BASE}/admin/tokens/${tokenId}`, {
+                    method: 'PUT',
+                    body: JSON.stringify(tokenData)
+                });
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showMessage('令牌更新成功', 'success');
+                    closeTokenModal();
+                    loadTokens();
+                } else {
+                    throw new Error(data.message || '更新失败');
+                }
+            } catch (error) {
+                showMessage('更新令牌失败: ' + error.message);
+            }
+        }
+
+        async function deleteToken(tokenId) {
+            if (!confirm('确定要删除这个令牌吗？此操作不可恢复。')) return;
+            
+            try {
+                const response = await fetchWithAuth(`${API_BASE}/admin/tokens/${tokenId}`, {
+                    method: 'DELETE'
+                });
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showMessage('令牌删除成功', 'success');
+                    loadTokens();
+                } else {
+                    throw new Error(data.message || '删除失败');
+                }
+            } catch (error) {
+                showMessage('删除令牌失败: ' + error.message);
+            }
+        }
+
+        // Webhook管理相关函数
+        async function loadWebhooks() {
+            const loading = document.getElementById('webhooksLoading');
+            loading.style.display = 'block';
+            
+            try {
+                const response = await fetchWithAuth(`${API_BASE}/webhook/config`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    webhooks = data.receivers || [];
+                    renderWebhooksTable();
+                } else {
+                    throw new Error(data.message || '加载失败');
+                }
+            } catch (error) {
+                showMessage('加载Webhook列表失败: ' + error.message);
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+
+        function renderWebhooksTable() {
+            const tbody = document.getElementById('webhooksTableBody');
+            
+            if (webhooks.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: #666;">暂无Webhook接收器</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = webhooks.map(webhook => `
+                <tr>
+                    <td><code>${webhook.id}</code></td>
+                    <td>${webhook.description || '无描述'}</td>
+                    <td>
+                        <code style="font-size: 12px;">${API_BASE}/webhook/receive/${webhook.id}</code>
+                        <button class="copy-btn" onclick="copyToClipboard('${API_BASE}/webhook/receive/${webhook.id}')">复制</button>
+                    </td>
+                    <td>
+                        ${webhook.secret ? 
+                            '<span class="status-badge status-active">✓ 已设置</span>' : 
+                            '<span class="status-badge status-inactive">✗ 无密钥</span>'
+                        }
+                    </td>
+                    <td>${formatDate(webhook.createdAt)}</td>
+                    <td>${webhook.useCount || 0}</td>
+                    <td>${webhook.lastUsed ? formatDate(webhook.lastUsed) : '未使用'}</td>
+                    <td>
+                        <button class="btn btn-secondary copy-webhook-btn" data-webhook-id="${webhook.id}">复制URL</button>
+                        <button class="btn btn-danger delete-webhook-btn" data-webhook-id="${webhook.id}">删除</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function openWebhookModal() {
+            document.getElementById('webhookModal').classList.add('show');
+            // 清空表单
+            document.getElementById('webhookForm').reset();
+            document.getElementById('previewUrl').textContent = 'http://localhost:6997/webhook/receive/[接收器ID]';
+        }
+
+        function closeWebhookModal() {
+            document.getElementById('webhookModal').classList.remove('show');
+            document.getElementById('webhookForm').reset();
+        }
+
+        // 添加实时URL预览功能
+        function updatePreviewUrl() {
+            const webhookId = document.getElementById('webhookId').value;
+            const previewUrl = document.getElementById('previewUrl');
+            
+            if (webhookId && webhookId.trim()) {
+                previewUrl.textContent = `${API_BASE}/webhook/receive/${webhookId.trim()}`;
+            } else {
+                previewUrl.textContent = 'http://localhost:6997/webhook/receive/[接收器ID]';
+            }
+        }
+
+        // 复制到剪贴板的通用函数
+        async function copyToClipboard(text) {
+            try {
+                await navigator.clipboard.writeText(text);
+                showMessage('已复制到剪贴板', 'success');
+            } catch (error) {
+                showMessage('复制失败: ' + error.message);
+            }
+        }
+
+        async function copyWebhookUrl(webhookId) {
+            const url = `${API_BASE}/webhook/receive/${webhookId}`;
+            try {
+                await navigator.clipboard.writeText(url);
+                showMessage('Webhook URL已复制到剪贴板', 'success');
+            } catch (error) {
+                showMessage('复制失败: ' + error.message);
+            }
+        }
+
+        async function deleteWebhook(webhookId) {
+            if (!confirm('确定要删除这个Webhook吗？此操作不可恢复。')) return;
+            
+            try {
+                const response = await fetchWithAuth(`${API_BASE}/webhook/config/receiver/${webhookId}`, {
+                    method: 'DELETE'
+                });
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showMessage('Webhook删除成功', 'success');
+                    loadWebhooks();
+                } else {
+                    throw new Error(data.message || '删除失败');
+                }
+            } catch (error) {
+                showMessage('删除Webhook失败: ' + error.message);
+            }
+        }
+
+        // 日志相关函数
+        async function loadLogs() {
+            const loading = document.getElementById('logsLoading');
+            loading.style.display = 'block';
+            
+            try {
+                const response = await fetchWithAuth(`${API_BASE}/webhook/logs?limit=50`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    logs = data.logs || [];
+                    renderLogs();
+                } else {
+                    throw new Error(data.message || '加载失败');
+                }
+            } catch (error) {
+                showMessage('加载日志失败: ' + error.message);
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+
+        function renderLogs() {
+            const container = document.getElementById('logsContainer');
+            
+            if (logs.length === 0) {
+                container.innerHTML = '<div style="text-align: center; color: #666; padding: 40px;">暂无日志</div>';
+                return;
+            }
+            
+            container.innerHTML = logs.map(log => {
+                const timestamp = formatDate(log.timestamp);
+                const typeClass = log.type.includes('ERROR') ? 'status-inactive' : 'status-active';
+                
+                // 格式化日志数据显示
+                let formattedData = '';
+                try {
+                    if (log.data && typeof log.data === 'object') {
+                        // 美化webhook数据显示
+                        if (log.data.payload) {
+                            const payload = log.data.payload;
+                            formattedData = `
+                                <div><strong>Webhook ID:</strong> ${log.data.webhookId || 'general'}</div>
+                                <div><strong>类型:</strong> ${payload.type || 'unknown'}</div>
+                                <div><strong>标题:</strong> ${payload.title || '无标题'}</div>
+                                <div><strong>内容:</strong> ${payload.content || '无内容'}</div>
+                                ${payload.values ? `<div><strong>参数:</strong> ${JSON.stringify(payload.values)}</div>` : ''}
+                                <div><strong>来源IP:</strong> ${log.data.ip || '未知'}</div>
+                            `;
+                        } else {
+                            formattedData = JSON.stringify(log.data, null, 2);
+                        }
+                    } else {
+                        formattedData = String(log.data || '无数据');
+                    }
+                } catch (error) {
+                    formattedData = String(log.data || '数据解析错误');
+                }
+                
+                return `
+                    <div class="card" style="margin-bottom: 10px; padding: 15px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <span class="status-badge ${typeClass}">${log.type}</span>
+                            <span style="color: #666; font-size: 14px;">${timestamp}</span>
+                        </div>
+                        <div style="font-size: 14px; color: #555; line-height: 1.5;">
+                            ${formattedData}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function refreshLogs() {
+            loadLogs();
+        }
+
+        // 表单提交处理
+        document.getElementById('tokenForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            const originalText = submitBtn.textContent;
+            
+            try {
+                submitBtn.disabled = true;
+                
+                const formData = new FormData(e.target);
+                const tokenId = formData.get('id');
+                const isEditing = !!tokenId;
+                
+                submitBtn.textContent = isEditing ? '更新中...' : '创建中...';
+                
+                if (isEditing) {
+                    // 编辑令牌
+                    const data = {
+                        name: formData.get('name'),
+                        description: formData.get('description')
+                    };
+                    await updateToken(tokenId, data);
+                } else {
+                    // 创建新令牌
+                    const expiryValue = formData.get('expiry');
+                    const data = {
+                        name: formData.get('name'),
+                        type: formData.get('type'),
+                        description: formData.get('description'),
+                        expiry: (expiryValue && expiryValue.trim() !== '') ? parseInt(expiryValue) : null
+                    };
+                    
+                    // 添加主要UI令牌设置
+                    if (data.type === 'ui_access' && document.getElementById('isPrimary').checked) {
+                        data.is_primary = true;
+                    }
+                    
+                    const response = await fetchWithAuth(`${API_BASE}/admin/tokens`, {
+                        method: 'POST',
+                        body: JSON.stringify(data)
+                    });
+                    const result = await response.json();
+                    
+                    if (response.ok) {
+                        showMessage('令牌创建成功', 'success');
+                        e.target.reset();
+                        closeTokenModal();
+                        loadTokens();
+                    } else {
+                        if (result.errors && Array.isArray(result.errors)) {
+                            const errorMessages = result.errors.map(err => err.msg || err.message).join(', ');
+                            throw new Error(`验证失败: ${errorMessages}`);
+                        } else {
+                            throw new Error(result.message || '创建失败');
+                        }
+                    }
+                }
+            } catch (error) {
+                showMessage((tokenId ? '更新' : '创建') + '令牌失败: ' + error.message);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = originalText;
+            }
+        });
+
+        document.getElementById('webhookForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            const originalText = submitBtn.textContent;
+            
+            try {
+                submitBtn.disabled = true;
+                submitBtn.textContent = '创建中...';
+                
+                const formData = new FormData(e.target);
+                const data = {
+                    id: formData.get('id'),
+                    secret: formData.get('secret'),
+                    description: formData.get('description')
+                };
+                
+                const response = await fetchWithAuth(`${API_BASE}/webhook/config/receiver`, {
+                    method: 'POST',
+                    body: JSON.stringify(data)
+                });
+                const result = await response.json();
+                
+                if (response.ok) {
+                    showMessage(`接收器创建成功！URL: ${API_BASE}/webhook/receive/${data.id}`, 'success');
+                    e.target.reset(); // 重置表单
+                    closeWebhookModal();
+                    loadWebhooks();
+                } else {
+                    if (result.errors && Array.isArray(result.errors)) {
+                        const errorMessages = result.errors.map(err => err.msg || err.message).join(', ');
+                        throw new Error(`验证失败: ${errorMessages}`);
+                    } else {
+                        throw new Error(result.error || result.message || '创建失败');
+                    }
+                }
+            } catch (error) {
+                showMessage('创建接收器失败: ' + error.message);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = originalText;
+            }
+        });
+
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            loadOverview();
+            
+            // 添加tab切换事件监听器
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.addEventListener('click', (e) => {
+                    const tabName = e.target.getAttribute('data-tab');
+                    showTab(tabName);
+                });
+            });
+            
+            // 添加按钮事件监听器
+            document.getElementById('refreshStatsBtn').addEventListener('click', refreshStats);
+            document.getElementById('refreshLogsBtn').addEventListener('click', refreshLogs);
+            document.getElementById('openTokenModalBtn').addEventListener('click', openTokenModal);
+            document.getElementById('openWebhookModalBtn').addEventListener('click', openWebhookModal);
+            document.getElementById('closeTokenModal').addEventListener('click', closeTokenModal);
+            document.getElementById('closeWebhookModal').addEventListener('click', closeWebhookModal);
+            
+            // 退出登录按钮
+            document.querySelector('.logout-btn').addEventListener('click', logout);
+            
+            // 密码修改表单
+            document.getElementById('changePasswordForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                const currentPassword = document.getElementById('currentPassword').value;
+                const newPassword = document.getElementById('newPassword').value;
+                const confirmPassword = document.getElementById('confirmPassword').value;
+                
+                if (newPassword !== confirmPassword) {
+                    showMessage('新密码和确认密码不匹配');
+                    return;
+                }
+                
+                if (newPassword.length < 6) {
+                    showMessage('新密码长度至少6位');
+                    return;
+                }
+                
+                await changePassword(currentPassword, newPassword);
+            });
+            
+            // 安全操作按钮
+            document.getElementById('logoutAllBtn').addEventListener('click', () => {
+                if (confirm('确定要注销所有会话吗？这将强制所有已登录的会话退出。')) {
+                    showMessage('所有会话已注销', 'success');
+                    setTimeout(() => {
+                        window.location.href = `${API_BASE}/admin`;
+                    }, 1500);
+                }
+            });
+            
+            document.getElementById('viewLoginLogsBtn').addEventListener('click', () => {
+                showTab('logs');
+                showMessage('正在加载登录日志...', 'success');
+            });
+            
+            // 添加令牌类型选择事件监听器
+            document.getElementById('tokenType').addEventListener('change', (e) => {
+                const selectedType = e.target.value;
+                const primaryUIGroup = document.getElementById('primaryUIGroup');
+                
+                if (selectedType === 'ui_access') {
+                    primaryUIGroup.style.display = 'block';
+                } else {
+                    primaryUIGroup.style.display = 'none';
+                    document.getElementById('isPrimary').checked = false;
+                }
+            });
+            
+            // 添加webhook ID输入框的实时预览
+            document.getElementById('webhookId').addEventListener('input', updatePreviewUrl);
+            
+            // 为表格按钮添加事件委托
+            document.addEventListener('click', (e) => {
+                // 令牌复制按钮
+                if (e.target.classList.contains('copy-token-btn')) {
+                    const tokenId = e.target.getAttribute('data-token-id');
+                    copyToken(tokenId);
+                }
+                
+                // 令牌编辑按钮
+                if (e.target.classList.contains('edit-token-btn')) {
+                    const tokenId = e.target.getAttribute('data-token-id');
+                    openEditTokenModal(tokenId);
+                }
+                
+                // 令牌删除按钮
+                if (e.target.classList.contains('delete-token-btn')) {
+                    const tokenId = e.target.getAttribute('data-token-id');
+                    deleteToken(tokenId);
+                }
+                
+                // Webhook复制按钮
+                if (e.target.classList.contains('copy-webhook-btn')) {
+                    const webhookId = e.target.getAttribute('data-webhook-id');
+                    copyWebhookUrl(webhookId);
+                }
+                
+                // Webhook删除按钮
+                if (e.target.classList.contains('delete-webhook-btn')) {
+                    const webhookId = e.target.getAttribute('data-webhook-id');
+                    deleteWebhook(webhookId);
+                }
+            });
+        });
+    </script>
+</body>
+</html>

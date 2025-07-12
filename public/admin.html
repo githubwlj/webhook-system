@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理员登录 - Webhook系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #333;
+        }
+
+        .login-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            animation: slideUp 0.5s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .login-header h1 {
+            font-size: 2rem;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .login-header p {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #555;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            background: #f8f9fa;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            background: white;
+        }
+
+        .captcha-container {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .captcha-image {
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            cursor: pointer;
+            min-height: 50px;
+            min-width: 120px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            font-weight: bold;
+            color: #667eea;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            user-select: none;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .captcha-image:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .captcha-image::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: 
+                radial-gradient(circle at 20% 20%, rgba(255,255,255,0.3) 1px, transparent 1px),
+                radial-gradient(circle at 80% 80%, rgba(0,0,0,0.05) 1px, transparent 1px),
+                linear-gradient(45deg, transparent 49%, rgba(255,255,255,0.1) 50%, transparent 51%),
+                linear-gradient(-45deg, transparent 49%, rgba(0,0,0,0.05) 50%, transparent 51%);
+            background-size: 20px 20px, 15px 15px, 10px 10px, 8px 8px;
+            animation: captchaMove 20s linear infinite;
+            pointer-events: none;
+        }
+
+        @keyframes captchaMove {
+            0% { transform: translateX(-50px) translateY(-50px); }
+            100% { transform: translateX(50px) translateY(50px); }
+        }
+
+        .captcha-text {
+            position: relative;
+            z-index: 2;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+        }
+
+        .captcha-refresh-hint {
+            position: absolute;
+            bottom: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 12px;
+            color: #666;
+            opacity: 0.8;
+        }
+
+        .captcha-input {
+            flex: 1;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid #f5c6cb;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid #c3e6cb;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .help-text {
+            margin-top: 20px;
+            padding: 15px;
+            background: #e3f2fd;
+            border-radius: 8px;
+            font-size: 14px;
+            color: #1565c0;
+        }
+
+        .help-text strong {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        @media (max-width: 480px) {
+            .login-container {
+                margin: 20px;
+                padding: 30px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-header">
+            <h1>🔐 管理员登录</h1>
+            <p>Webhook系统管理后台</p>
+        </div>
+
+        <div id="message"></div>
+
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="username">用户名</label>
+                <input type="text" id="username" name="username" required>
+            </div>
+
+            <div class="form-group">
+                <label for="password">密码</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+
+            <div class="form-group">
+                <label for="captcha">验证码</label>
+                <div class="captcha-container">
+                    <input type="text" id="captcha" name="captcha" class="captcha-input" required maxlength="5" placeholder="输入验证码">
+                    <div class="captcha-image" id="captchaImage" onclick="refreshCaptcha()" title="点击刷新验证码">
+                        <span class="captcha-text" id="captchaText">ABCD5</span>
+                        <div class="captcha-refresh-hint">点击刷新</div>
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" class="btn" id="loginBtn">登录</button>
+        </form>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>正在登录...</p>
+        </div>
+
+        <div class="help-text">
+            <strong>🔍 系统功能预览：</strong>
+            • 签名密钥管理 - 安全存储和管理webhook签名密钥<br>
+            • 令牌管理 - 管理系统访问令牌和权限<br>
+            • 实时监控 - 查看webhook调用日志和统计<br>
+            • 文档中心 - 完整的API文档和使用指南
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = window.location.origin;
+        let currentCaptcha = generateCaptcha();
+
+        function generateCaptcha() {
+            const chars = 'ABCDEFGHIJKLMNPQRSTUVWXYZ123456789';
+            let captcha = '';
+            for (let i = 0; i < 5; i++) {
+                captcha += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return captcha;
+        }
+
+        function refreshCaptcha() {
+            currentCaptcha = generateCaptcha();
+            const captchaElement = document.getElementById('captchaText');
+            const captchaContainer = document.getElementById('captchaImage');
+            
+            // 随机颜色组合
+            const colorSets = [
+                ['#667eea', '#764ba2', '#5a67d8'],
+                ['#28a745', '#20c997', '#17a2b8'],
+                ['#dc3545', '#fd7e14', '#ffc107'],
+                ['#6f42c1', '#e83e8c', '#fd7e14'],
+                ['#495057', '#6c757d', '#adb5bd']
+            ];
+            const randomColorSet = colorSets[Math.floor(Math.random() * colorSets.length)];
+            
+            // 随机字符变形和干扰
+            let styledCaptcha = '';
+            for (let i = 0; i < currentCaptcha.length; i++) {
+                const char = currentCaptcha[i];
+                const randomRotation = (Math.random() - 0.5) * 40; // -20 to 20 degrees
+                const randomScale = 0.7 + Math.random() * 0.6; // 0.7 to 1.3
+                const randomSkew = (Math.random() - 0.5) * 30; // -15 to 15 degrees
+                const randomColor = randomColorSet[Math.floor(Math.random() * randomColorSet.length)];
+                const randomOpacity = 0.7 + Math.random() * 0.3; // 0.7 to 1.0
+                
+                // 随机字体变体
+                const fontVariants = ['normal', 'italic', 'oblique'];
+                const fontWeights = ['normal', 'bold', '600', '700'];
+                const textDecorations = ['none', 'underline', 'overline'];
+                
+                const randomFontVariant = fontVariants[Math.floor(Math.random() * fontVariants.length)];
+                const randomFontWeight = fontWeights[Math.floor(Math.random() * fontWeights.length)];
+                const randomTextDecoration = textDecorations[Math.floor(Math.random() * textDecorations.length)];
+                
+                styledCaptcha += `<span style="
+                    display: inline-block;
+                    transform: rotate(${randomRotation}deg) scale(${randomScale}) skew(${randomSkew}deg);
+                    color: ${randomColor};
+                    opacity: ${randomOpacity};
+                    margin: 0 ${Math.random() * 4}px;
+                    font-weight: ${randomFontWeight};
+                    font-style: ${randomFontVariant};
+                    text-decoration: ${randomTextDecoration};
+                    filter: blur(${Math.random() * 0.5}px);
+                    text-shadow: ${Math.random() * 2}px ${Math.random() * 2}px ${Math.random() * 3}px rgba(0,0,0,0.3);
+                ">${char}</span>`;
+            }
+            
+            captchaElement.innerHTML = styledCaptcha;
+            
+            // 随机背景效果
+            const backgroundEffects = [
+                'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
+                'linear-gradient(45deg, #fff3cd 0%, #f8d7da 100%)',
+                'linear-gradient(90deg, #d4edda 0%, #d1ecf1 100%)',
+                'linear-gradient(180deg, #e2e3e5 0%, #f8f9fa 100%)',
+                'linear-gradient(225deg, #ffeaa7 0%, #fab1a0 100%)',
+                'radial-gradient(circle at center, #f8f9fa 0%, #dee2e6 100%)',
+                'conic-gradient(from 0deg, #f8f9fa, #e9ecef, #dee2e6, #f8f9fa)'
+            ];
+            
+            const randomBg = backgroundEffects[Math.floor(Math.random() * backgroundEffects.length)];
+            
+            // 创建更复杂的干扰图案
+            const canvas = document.createElement('canvas');
+            canvas.width = 150;
+            canvas.height = 60;
+            const ctx = canvas.getContext('2d');
+            
+            // 绘制随机干扰线
+            ctx.lineCap = 'round';
+            for (let i = 0; i < 5; i++) {
+                ctx.strokeStyle = `rgba(${Math.random() * 255}, ${Math.random() * 255}, ${Math.random() * 255}, 0.1)`;
+                ctx.lineWidth = Math.random() * 2 + 1;
+                ctx.beginPath();
+                ctx.moveTo(Math.random() * canvas.width, Math.random() * canvas.height);
+                ctx.quadraticCurveTo(
+                    Math.random() * canvas.width, 
+                    Math.random() * canvas.height,
+                    Math.random() * canvas.width, 
+                    Math.random() * canvas.height
+                );
+                ctx.stroke();
+            }
+            
+            // 绘制随机干扰点
+            for (let i = 0; i < 30; i++) {
+                ctx.fillStyle = `rgba(${Math.random() * 255}, ${Math.random() * 255}, ${Math.random() * 255}, 0.08)`;
+                ctx.beginPath();
+                ctx.arc(
+                    Math.random() * canvas.width, 
+                    Math.random() * canvas.height, 
+                    Math.random() * 3 + 1, 
+                    0, 
+                    2 * Math.PI
+                );
+                ctx.fill();
+            }
+            
+            // 绘制随机几何图形
+            for (let i = 0; i < 3; i++) {
+                ctx.fillStyle = `rgba(${Math.random() * 255}, ${Math.random() * 255}, ${Math.random() * 255}, 0.03)`;
+                ctx.fillRect(
+                    Math.random() * canvas.width, 
+                    Math.random() * canvas.height, 
+                    Math.random() * 20 + 5, 
+                    Math.random() * 20 + 5
+                );
+            }
+            
+            // 应用背景效果
+            const imageData = canvas.toDataURL();
+            captchaContainer.style.background = randomBg;
+            captchaContainer.style.backgroundImage = `url(${imageData})`;
+            captchaContainer.style.backgroundBlendMode = 'multiply';
+            captchaContainer.style.backgroundSize = 'cover';
+            
+            // 添加随机边框效果
+            const borderEffects = [
+                '2px solid #e1e5e9',
+                '2px dashed #dee2e6',
+                '2px dotted #adb5bd',
+                '3px double #6c757d'
+            ];
+            const randomBorder = borderEffects[Math.floor(Math.random() * borderEffects.length)];
+            captchaContainer.style.border = randomBorder;
+            
+            // 清空输入框
+            document.getElementById('captcha').value = '';
+            
+            // 添加刷新动画
+            captchaContainer.style.animation = 'none';
+            captchaContainer.offsetHeight; // 触发重排
+            captchaContainer.style.animation = 'captchaRefresh 0.5s ease-out';
+        }
+        
+        // 添加刷新动画的CSS
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes captchaRefresh {
+                0% { transform: scale(1) rotate(0deg); }
+                50% { transform: scale(1.1) rotate(2deg); }
+                100% { transform: scale(1) rotate(0deg); }
+            }
+        `;
+        document.head.appendChild(style);
+
+        function showMessage(message, type = 'error') {
+            const messageDiv = document.getElementById('message');
+            messageDiv.innerHTML = `<div class="${type}">${message}</div>`;
+            setTimeout(() => {
+                messageDiv.innerHTML = '';
+            }, 5000);
+        }
+
+        function showLoading(show = true) {
+            const loading = document.getElementById('loading');
+            const form = document.getElementById('loginForm');
+            
+            if (show) {
+                loading.classList.add('show');
+                form.style.display = 'none';
+            } else {
+                loading.classList.remove('show');
+                form.style.display = 'block';
+            }
+        }
+
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const captcha = document.getElementById('captcha').value;
+
+            if (!username || !password || !captcha) {
+                showMessage('请填写所有必填项');
+                return;
+            }
+
+            if (captcha.toUpperCase() !== currentCaptcha) {
+                showMessage('验证码错误');
+                refreshCaptcha();
+                return;
+            }
+
+            showLoading(true);
+
+            try {
+                const response = await fetch(`${API_BASE}/admin/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ username, password, captcha })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showMessage('登录成功，正在跳转...', 'success');
+                    setTimeout(() => {
+                        window.location.href = `${API_BASE}/admin/dashboard?token=${data.token}`;
+                    }, 1500);
+                } else {
+                    showMessage(data.message || '登录失败');
+                    refreshCaptcha();
+                }
+            } catch (error) {
+                showMessage('网络错误，请重试');
+                refreshCaptcha();
+            } finally {
+                showLoading(false);
+            }
+        });
+
+        // 初始化验证码
+        refreshCaptcha();
+
+        // 检查是否已经登录
+        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get('token');
+        if (token) {
+            window.location.href = `${API_BASE}/admin/dashboard?token=${token}`;
+        }
+    </script>
+</body>
+</html>

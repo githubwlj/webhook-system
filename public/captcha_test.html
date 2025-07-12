@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>验证码测试页面</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0;
+        }
+        .test-container {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            text-align: center;
+        }
+        .captcha-container {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            justify-content: center;
+            margin: 20px 0;
+        }
+        .captcha-image {
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            cursor: pointer;
+            min-height: 50px;
+            min-width: 120px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            font-weight: bold;
+            color: #667eea;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            user-select: none;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        .captcha-image:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+        .captcha-image::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: 
+                radial-gradient(circle at 20% 20%, rgba(255,255,255,0.3) 1px, transparent 1px),
+                radial-gradient(circle at 80% 80%, rgba(0,0,0,0.05) 1px, transparent 1px),
+                linear-gradient(45deg, transparent 49%, rgba(255,255,255,0.1) 50%, transparent 51%),
+                linear-gradient(-45deg, transparent 49%, rgba(0,0,0,0.05) 50%, transparent 51%);
+            background-size: 20px 20px, 15px 15px, 10px 10px, 8px 8px;
+            animation: captchaMove 20s linear infinite;
+            pointer-events: none;
+        }
+        @keyframes captchaMove {
+            0% { transform: translateX(-50px) translateY(-50px); }
+            100% { transform: translateX(50px) translateY(50px); }
+        }
+        .captcha-text {
+            position: relative;
+            z-index: 2;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+        }
+        .captcha-refresh-hint {
+            position: absolute;
+            bottom: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 12px;
+            color: #666;
+            opacity: 0.8;
+        }
+        input {
+            padding: 10px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+        button {
+            padding: 12px 20px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+        .test-info {
+            margin-top: 20px;
+            font-size: 14px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h2>🔐 增强验证码测试</h2>
+        <p>点击验证码图片可以刷新，每次都会生成不同的干扰效果</p>
+        
+        <div class="captcha-container">
+            <input type="text" id="captcha" placeholder="输入验证码" maxlength="5">
+            <div class="captcha-image" id="captchaImage" onclick="refreshCaptcha()" title="点击刷新验证码">
+                <span class="captcha-text" id="captchaText">ABCD5</span>
+                <div class="captcha-refresh-hint">点击刷新</div>
+            </div>
+        </div>
+        
+        <button onclick="testCaptcha()">验证</button>
+        <button onclick="refreshCaptcha()">刷新验证码</button>
+        
+        <div class="test-info">
+            <p><strong>验证码特性：</strong></p>
+            <ul style="text-align: left; display: inline-block;">
+                <li>✅ 随机字符旋转、缩放、倾斜</li>
+                <li>✅ 多种颜色组合</li>
+                <li>✅ 随机字体样式和装饰</li>
+                <li>✅ 动态背景干扰图案</li>
+                <li>✅ 随机干扰线和点</li>
+                <li>✅ 多种边框样式</li>
+                <li>✅ 点击刷新动画</li>
+                <li>✅ 悬停交互效果</li>
+            </ul>
+        </div>
+        
+        <div id="result" style="margin-top: 20px;"></div>
+    </div>
+
+    <script>
+        let currentCaptcha = generateCaptcha();
+
+        function generateCaptcha() {
+            const chars = 'ABCDEFGHIJKLMNPQRSTUVWXYZ123456789';
+            let captcha = '';
+            for (let i = 0; i < 5; i++) {
+                captcha += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return captcha;
+        }
+
+        function refreshCaptcha() {
+            currentCaptcha = generateCaptcha();
+            const captchaElement = document.getElementById('captchaText');
+            const captchaContainer = document.getElementById('captchaImage');
+            
+            // 随机颜色组合
+            const colorSets = [
+                ['#667eea', '#764ba2', '#5a67d8'],
+                ['#28a745', '#20c997', '#17a2b8'],
+                ['#dc3545', '#fd7e14', '#ffc107'],
+                ['#6f42c1', '#e83e8c', '#fd7e14'],
+                ['#495057', '#6c757d', '#adb5bd']
+            ];
+            const randomColorSet = colorSets[Math.floor(Math.random() * colorSets.length)];
+            
+            // 随机字符变形和干扰
+            let styledCaptcha = '';
+            for (let i = 0; i < currentCaptcha.length; i++) {
+                const char = currentCaptcha[i];
+                const randomRotation = (Math.random() - 0.5) * 40;
+                const randomScale = 0.7 + Math.random() * 0.6;
+                const randomSkew = (Math.random() - 0.5) * 30;
+                const randomColor = randomColorSet[Math.floor(Math.random() * randomColorSet.length)];
+                const randomOpacity = 0.7 + Math.random() * 0.3;
+                
+                const fontVariants = ['normal', 'italic', 'oblique'];
+                const fontWeights = ['normal', 'bold', '600', '700'];
+                const textDecorations = ['none', 'underline', 'overline'];
+                
+                const randomFontVariant = fontVariants[Math.floor(Math.random() * fontVariants.length)];
+                const randomFontWeight = fontWeights[Math.floor(Math.random() * fontWeights.length)];
+                const randomTextDecoration = textDecorations[Math.floor(Math.random() * textDecorations.length)];
+                
+                styledCaptcha += `<span style="
+                    display: inline-block;
+                    transform: rotate(${randomRotation}deg) scale(${randomScale}) skew(${randomSkew}deg);
+                    color: ${randomColor};
+                    opacity: ${randomOpacity};
+                    margin: 0 ${Math.random() * 4}px;
+                    font-weight: ${randomFontWeight};
+                    font-style: ${randomFontVariant};
+                    text-decoration: ${randomTextDecoration};
+                    filter: blur(${Math.random() * 0.5}px);
+                    text-shadow: ${Math.random() * 2}px ${Math.random() * 2}px ${Math.random() * 3}px rgba(0,0,0,0.3);
+                ">${char}</span>`;
+            }
+            
+            captchaElement.innerHTML = styledCaptcha;
+            
+            // 随机背景效果
+            const backgroundEffects = [
+                'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
+                'linear-gradient(45deg, #fff3cd 0%, #f8d7da 100%)',
+                'linear-gradient(90deg, #d4edda 0%, #d1ecf1 100%)',
+                'linear-gradient(180deg, #e2e3e5 0%, #f8f9fa 100%)',
+                'linear-gradient(225deg, #ffeaa7 0%, #fab1a0 100%)',
+                'radial-gradient(circle at center, #f8f9fa 0%, #dee2e6 100%)',
+                'conic-gradient(from 0deg, #f8f9fa, #e9ecef, #dee2e6, #f8f9fa)'
+            ];
+            
+            const randomBg = backgroundEffects[Math.floor(Math.random() * backgroundEffects.length)];
+            
+            // 创建干扰图案
+            const canvas = document.createElement('canvas');
+            canvas.width = 150;
+            canvas.height = 60;
+            const ctx = canvas.getContext('2d');
+            
+            // 绘制随机干扰线
+            ctx.lineCap = 'round';
+            for (let i = 0; i < 5; i++) {
+                ctx.strokeStyle = `rgba(${Math.random() * 255}, ${Math.random() * 255}, ${Math.random() * 255}, 0.1)`;
+                ctx.lineWidth = Math.random() * 2 + 1;
+                ctx.beginPath();
+                ctx.moveTo(Math.random() * canvas.width, Math.random() * canvas.height);
+                ctx.quadraticCurveTo(
+                    Math.random() * canvas.width, 
+                    Math.random() * canvas.height,
+                    Math.random() * canvas.width, 
+                    Math.random() * canvas.height
+                );
+                ctx.stroke();
+            }
+            
+            // 绘制随机干扰点
+            for (let i = 0; i < 30; i++) {
+                ctx.fillStyle = `rgba(${Math.random() * 255}, ${Math.random() * 255}, ${Math.random() * 255}, 0.08)`;
+                ctx.beginPath();
+                ctx.arc(
+                    Math.random() * canvas.width, 
+                    Math.random() * canvas.height, 
+                    Math.random() * 3 + 1, 
+                    0, 
+                    2 * Math.PI
+                );
+                ctx.fill();
+            }
+            
+            // 绘制随机几何图形
+            for (let i = 0; i < 3; i++) {
+                ctx.fillStyle = `rgba(${Math.random() * 255}, ${Math.random() * 255}, ${Math.random() * 255}, 0.03)`;
+                ctx.fillRect(
+                    Math.random() * canvas.width, 
+                    Math.random() * canvas.height, 
+                    Math.random() * 20 + 5, 
+                    Math.random() * 20 + 5
+                );
+            }
+            
+            // 应用背景效果
+            const imageData = canvas.toDataURL();
+            captchaContainer.style.background = randomBg;
+            captchaContainer.style.backgroundImage = `url(${imageData})`;
+            captchaContainer.style.backgroundBlendMode = 'multiply';
+            captchaContainer.style.backgroundSize = 'cover';
+            
+            // 添加随机边框效果
+            const borderEffects = [
+                '2px solid #e1e5e9',
+                '2px dashed #dee2e6',
+                '2px dotted #adb5bd',
+                '3px double #6c757d'
+            ];
+            const randomBorder = borderEffects[Math.floor(Math.random() * borderEffects.length)];
+            captchaContainer.style.border = randomBorder;
+            
+            // 添加刷新动画
+            captchaContainer.style.animation = 'none';
+            captchaContainer.offsetHeight;
+            captchaContainer.style.animation = 'captchaRefresh 0.5s ease-out';
+        }
+        
+        // 添加刷新动画的CSS
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes captchaRefresh {
+                0% { transform: scale(1) rotate(0deg); }
+                50% { transform: scale(1.1) rotate(2deg); }
+                100% { transform: scale(1) rotate(0deg); }
+            }
+        `;
+        document.head.appendChild(style);
+
+        function testCaptcha() {
+            const userInput = document.getElementById('captcha').value.toUpperCase();
+            const resultDiv = document.getElementById('result');
+            
+            if (userInput === currentCaptcha) {
+                resultDiv.innerHTML = '<div style="color: #28a745; font-weight: bold;">✅ 验证码正确！</div>';
+                setTimeout(() => {
+                    refreshCaptcha();
+                    document.getElementById('captcha').value = '';
+                    resultDiv.innerHTML = '';
+                }, 2000);
+            } else {
+                resultDiv.innerHTML = '<div style="color: #dc3545; font-weight: bold;">❌ 验证码错误，请重试</div>';
+                setTimeout(() => {
+                    refreshCaptcha();
+                    document.getElementById('captcha').value = '';
+                    resultDiv.innerHTML = '';
+                }, 2000);
+            }
+        }
+
+        // 回车键验证
+        document.getElementById('captcha').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                testCaptcha();
+            }
+        });
+
+        // 初始化验证码
+        refreshCaptcha();
+    </script>
+</body>
+</html>
