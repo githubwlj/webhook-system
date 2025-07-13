@@ -263,6 +263,105 @@
             word-break: break-all;
             border: 1px solid #ddd;
         }
+
+        /* 日志控制面板样式 */
+        .log-controls {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .control-select {
+            padding: 5px 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: white;
+            font-size: 14px;
+        }
+
+        .auto-refresh-label {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 14px;
+            color: #666;
+            cursor: pointer;
+        }
+
+        .auto-refresh-label input[type="checkbox"] {
+            margin: 0;
+        }
+
+        /* 分页样式 */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            padding: 20px;
+            border-top: 1px solid #eee;
+            background: #f9f9f9;
+            border-radius: 0 0 15px 15px;
+        }
+
+        .pagination-btn {
+            padding: 8px 16px;
+            border: 1px solid #ddd;
+            background: white;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .pagination-btn:hover:not(:disabled) {
+            background: #f0f0f0;
+            border-color: #999;
+        }
+
+        .pagination-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .page-info {
+            color: #666;
+            font-size: 14px;
+            margin: 0 10px;
+        }
+
+        /* 日志条目时间显示优化 */
+        .log-timestamp {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+
+        .log-entry {
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .log-entry:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .log-controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .control-select, .refresh-btn {
+                width: 100%;
+            }
+            
+            .pagination {
+                flex-direction: column;
+                gap: 10px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -294,10 +393,27 @@
         <div class="card">
             <div class="card-header">
                 <h2 class="card-title">📊 实时活动日志</h2>
-                <button class="refresh-btn" onclick="refreshLogs()">🔄 刷新</button>
+                <div class="log-controls">
+                    <select id="logsPageSize" class="control-select">
+                        <option value="10">显示 10 条</option>
+                        <option value="20" selected>显示 20 条</option>
+                        <option value="30">显示 30 条</option>
+                        <option value="50">显示 50 条</option>
+                    </select>
+                    <label class="auto-refresh-label">
+                        <input type="checkbox" id="autoRefreshLogs" checked>
+                        自动刷新
+                    </label>
+                    <button class="refresh-btn" onclick="refreshLogs()">🔄 刷新</button>
+                </div>
             </div>
             <div id="logsContainer">
                 <div class="loading">正在加载日志...</div>
+            </div>
+            <div id="logsPagination" class="pagination" style="display: none;">
+                <button class="pagination-btn" id="prevLogsBtn" onclick="changeLogsPage(-1)" disabled>上一页</button>
+                <span id="logsPageInfo" class="page-info">第 1 页</span>
+                <button class="pagination-btn" id="nextLogsBtn" onclick="changeLogsPage(1)">下一页</button>
             </div>
         </div>
 
@@ -317,6 +433,11 @@
         const API_BASE = window.location.origin;
         const TOKEN = new URLSearchParams(window.location.search).get('token') || 
                      new URLSearchParams(window.location.search).get('access_key');
+
+        // 分页和排序变量
+        let currentPage = 1;
+        let pageSize = 20;
+        let autoRefreshInterval = null;
 
         if (!TOKEN) {
             document.body.innerHTML = `
@@ -370,12 +491,29 @@
             }
         }
 
-        async function loadLogs() {
+        async function loadLogs(page = 1) {
             try {
-                console.log('开始加载日志...');
-                const data = await fetchWithAuth(`${API_BASE}/api/dashboard/recent-logs?limit=20`);
-                console.log('获取到日志数据:', data);
-                displayLogs(data.logs);
+                console.log('开始加载日志，页面:', page);
+                
+                // 更新全局变量
+                currentPage = page;
+                const pageSizeSelect = document.getElementById('logsPageSize');
+                if (pageSizeSelect) {
+                    pageSize = parseInt(pageSizeSelect.value);
+                }
+                
+                // 使用正确的分页API调用
+                const offset = (page - 1) * pageSize;
+                const response = await fetchWithAuth(`${API_BASE}/webhook/logs?limit=${pageSize}&offset=${offset}&sort=desc`);
+                console.log('获取到日志数据:', response);
+                
+                if (response.logs) {
+                    displayLogs(response.logs);
+                    updatePagination(response.total, page);
+                } else {
+                    displayLogs([]);
+                    updatePagination(0, page);
+                }
             } catch (error) {
                 console.error('加载日志失败:', error);
                 showError('加载日志失败: ' + error.message);
@@ -398,6 +536,7 @@
 
             container.innerHTML = logs.map(log => {
                 const timestamp = new Date(log.timestamp).toLocaleString('zh-CN');
+                const timeAgo = getTimeAgo(log.timestamp);
                 const typeClass = log.type.includes('ERROR') || log.type.includes('FAILED') ? 'ERROR' : log.type;
                 
                 let details = '';
@@ -407,13 +546,47 @@
                 if (log.data.ip) {
                     details += ` · IP: ${log.data.ip}`;
                 }
+                
+                // 智能解析webhook数据
+                if (log.data.payload) {
+                    const payload = log.data.payload;
+                    
+                    // 提取事件信息
+                    const eventType = payload.eventType || payload.type || 'unknown';
+                    const eventName = payload.eventTypeName || payload.title || '无标题';
+                    
+                    if (eventType !== 'unknown') {
+                        details += ` · 事件: ${eventType}`;
+                    }
+                    if (eventName !== '无标题') {
+                        details += ` · ${eventName}`;
+                    }
+                    
+                    // 如果是评论相关事件，显示更多信息
+                    if (payload.data) {
+                        const data = payload.data;
+                        if (data.singlePageData?.title) {
+                            details += ` · 页面: ${data.singlePageData.title}`;
+                        }
+                        if (data.content) {
+                            details += ` · 内容: ${data.content.substring(0, 50)}${data.content.length > 50 ? '...' : ''}`;
+                        }
+                    }
+                    
+                    if (payload.hookTime) {
+                        details += ` · 事件时间: ${payload.hookTime}`;
+                    }
+                }
+                
                 if (log.data.url) {
                     details += ` · URL: ${log.data.url}`;
                 }
                 if (log.data.status) {
                     details += ` · 状态: ${log.data.status}`;
                 }
-                if (log.data.payload && log.data.payload.message) {
+                if (log.data.payload && log.data.payload.title && !log.data.payload.eventType) {
+                    details += ` · ${log.data.payload.title}`;
+                } else if (log.data.payload && log.data.payload.message && !log.data.payload.eventType) {
                     details += ` · 消息: ${log.data.payload.message}`;
                 }
 
@@ -421,7 +594,7 @@
                     <div class="log-entry type-${typeClass}">
                         <div class="log-meta">
                             <span class="log-type ${typeClass}">${log.type}</span>
-                            <span class="log-timestamp">${timestamp}</span>
+                            <span class="log-timestamp">${timestamp} (${timeAgo})</span>
                         </div>
                         <div class="log-details">${details || '系统事件'}</div>
                     </div>
@@ -431,29 +604,116 @@
             console.log('日志显示完成');
         }
 
+        // 时间差计算函数
+        function getTimeAgo(timestamp) {
+            const now = new Date();
+            const time = new Date(timestamp);
+            const diffInSeconds = Math.floor((now - time) / 1000);
+            
+            if (diffInSeconds < 60) return '刚刚';
+            if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}分钟前`;
+            if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}小时前`;
+            return `${Math.floor(diffInSeconds / 86400)}天前`;
+        }
+
         function showError(message) {
             const container = document.getElementById('logsContainer');
             container.innerHTML = `<div class="error">❌ ${message}</div>`;
         }
 
+        // 分页控制函数
+        function updatePagination(total, currentPage) {
+            const pagination = document.getElementById('logsPagination');
+            const pageInfo = document.getElementById('logsPageInfo');
+            const prevBtn = document.getElementById('prevLogsBtn');
+            const nextBtn = document.getElementById('nextLogsBtn');
+            
+            if (!pagination || !pageInfo || !prevBtn || !nextBtn) {
+                return;
+            }
+            
+            const totalPages = Math.ceil(total / pageSize);
+            
+            if (totalPages <= 1) {
+                pagination.style.display = 'none';
+                return;
+            }
+            
+            pagination.style.display = 'block';
+            pageInfo.textContent = `第 ${currentPage} 页，共 ${totalPages} 页`;
+            
+            prevBtn.disabled = currentPage <= 1;
+            nextBtn.disabled = currentPage >= totalPages;
+        }
+
+        function changeLogsPage(direction) {
+            const newPage = currentPage + direction;
+            if (newPage < 1) return;
+            loadLogs(newPage);
+        }
+
         function refreshLogs() {
             document.getElementById('logsContainer').innerHTML = '<div class="loading">正在刷新...</div>';
-            loadLogs();
+            loadLogs(1);
             loadStats();
+        }
+
+        // 设置自动刷新功能
+        function setupAutoRefresh() {
+            const checkbox = document.getElementById('autoRefreshLogs');
+            const pageSizeSelect = document.getElementById('logsPageSize');
+            
+            if (!checkbox || !pageSizeSelect) {
+                return;
+            }
+            
+            function startAutoRefresh() {
+                if (autoRefreshInterval) {
+                    clearInterval(autoRefreshInterval);
+                }
+                autoRefreshInterval = setInterval(() => {
+                    if (currentPage === 1) {
+                        loadStats();
+                        loadLogs(1);
+                    }
+                }, 15000); // 15秒自动刷新
+                console.log('Auto refresh started');
+            }
+            
+            function stopAutoRefresh() {
+                if (autoRefreshInterval) {
+                    clearInterval(autoRefreshInterval);
+                    autoRefreshInterval = null;
+                }
+                console.log('Auto refresh stopped');
+            }
+            
+            checkbox.addEventListener('change', function() {
+                if (this.checked) {
+                    startAutoRefresh();
+                } else {
+                    stopAutoRefresh();
+                }
+            });
+            
+            pageSizeSelect.addEventListener('change', function() {
+                pageSize = parseInt(this.value);
+                loadLogs(1);
+            });
+            
+            if (checkbox.checked) {
+                startAutoRefresh();
+            }
         }
 
         // 初始加载
         if (TOKEN) {
             console.log('令牌已找到:', TOKEN.substring(0, 10) + '...');
             loadStats();
-            loadLogs();
+            loadLogs(1);
             
-            // 每30秒自动刷新
-            setInterval(() => {
-                console.log('自动刷新数据...');
-                loadStats();
-                loadLogs();
-            }, 30000);
+            // 设置自动刷新
+            setupAutoRefresh();
         } else {
             console.error('未找到访问令牌');
         }

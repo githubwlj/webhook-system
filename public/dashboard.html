@@ -475,6 +475,37 @@
                 </div>
                 <div id="systemStatus"></div>
             </div>
+
+            <!-- 实时活动日志 -->
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">📊 实时活动</h2>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <select id="recentActivityLimit" style="padding: 5px; border: 1px solid #ddd; border-radius: 4px;">
+                            <option value="5">显示 5 条</option>
+                            <option value="10" selected>显示 10 条</option>
+                            <option value="20">显示 20 条</option>
+                            <option value="50">显示 50 条</option>
+                        </select>
+                        <label style="display: flex; align-items: center; gap: 5px; font-size: 14px;">
+                            <input type="checkbox" id="autoRefreshActivity" checked>
+                            自动刷新
+                        </label>
+                        <button class="btn btn-primary" onclick="loadRecentActivity()">手动刷新</button>
+                    </div>
+                </div>
+                <div id="recentActivityContainer">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <p>加载中...</p>
+                    </div>
+                </div>
+                <div id="recentActivityPagination" style="padding: 10px; text-align: center; border-top: 1px solid #eee; display: none;">
+                    <button class="btn" id="prevActivityBtn" onclick="changeActivityPage(-1)" disabled>上一页</button>
+                    <span id="activityPageInfo" style="margin: 0 15px;">第 1 页</span>
+                    <button class="btn" id="nextActivityBtn" onclick="changeActivityPage(1)">下一页</button>
+                </div>
+            </div>
         </div>
 
         <!-- 令牌管理页面 -->
@@ -549,13 +580,69 @@
             <div class="card">
                 <div class="card-header">
                     <h2 class="card-title">📋 系统日志</h2>
-                    <button class="btn btn-primary" id="refreshLogsBtn">刷新日志</button>
+                    <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                        <select id="logsPageSize" style="padding: 5px; border: 1px solid #ddd; border-radius: 4px;">
+                            <option value="10">每页 10 条</option>
+                            <option value="20" selected>每页 20 条</option>
+                            <option value="50">每页 50 条</option>
+                            <option value="100">每页 100 条</option>
+                        </select>
+                        
+                        <!-- 增强的过滤器选项 -->
+                        <select id="logsFilter" style="padding: 5px; border: 1px solid #ddd; border-radius: 4px;">
+                            <option value="">全部类型</option>
+                            <option value="RECEIVED">接收记录</option>
+                            <option value="SENT">发送记录</option>
+                            <option value="RECEIVER_CONFIGURED">接收器配置</option>
+                            <option value="RECEIVER_DELETED">接收器删除</option>
+                            <option value="ERROR">错误记录</option>
+                        </select>
+                        
+                        <select id="logsLevelFilter" style="padding: 5px; border: 1px solid #ddd; border-radius: 4px;">
+                            <option value="">全部级别</option>
+                            <option value="info">信息</option>
+                            <option value="warn">警告</option>
+                            <option value="error">错误</option>
+                        </select>
+                        
+                        <input type="text" id="logsSearchFilter" placeholder="搜索日志..." 
+                               style="padding: 5px; border: 1px solid #ddd; border-radius: 4px; width: 150px;">
+                        
+                        <div style="display: flex; gap: 5px; align-items: center;">
+                            <input type="date" id="logsDateFrom" 
+                                   style="padding: 5px; border: 1px solid #ddd; border-radius: 4px; width: 140px;">
+                            <span style="color: #666;">至</span>
+                            <input type="date" id="logsDateTo" 
+                                   style="padding: 5px; border: 1px solid #ddd; border-radius: 4px; width: 140px;">
+                        </div>
+                        
+                        <button id="clearLogsFilters" style="padding: 5px 10px; border: 1px solid #ddd; border-radius: 4px; background: #f8f9fa; cursor: pointer;">
+                            清除过滤
+                        </button>
+                        
+                        <label style="display: flex; align-items: center; gap: 5px; font-size: 14px;">
+                            <input type="checkbox" id="autoRefreshLogs" checked>
+                            自动刷新
+                        </label>
+                        <button class="btn btn-primary" id="refreshLogsBtn">手动刷新</button>
+                    </div>
                 </div>
                 <div class="loading" id="logsLoading">
                     <div class="spinner"></div>
                     <p>加载中...</p>
                 </div>
                 <div id="logsContainer">
+                </div>
+                <div id="logsPagination" style="padding: 15px; text-align: center; border-top: 1px solid #eee; display: none;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <button class="btn" id="firstLogsPageBtn" onclick="goToLogsPage(1)">首页</button>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <button class="btn" id="prevLogsPageBtn" onclick="changeLogsPage(-1)" disabled>上一页</button>
+                            <span id="logsPageInfo" style="margin: 0 15px;">第 1 页</span>
+                            <button class="btn" id="nextLogsPageBtn" onclick="changeLogsPage(1)">下一页</button>
+                        </div>
+                        <button class="btn" id="lastLogsPageBtn" onclick="goToLogsPage('last')">末页</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -740,9 +827,11 @@ Authorization: Bearer YOUR_TOKEN
                 <div class="form-group">
                     <label for="webhookId">接收器ID *</label>
                     <input type="text" id="webhookId" name="id" required 
-                           pattern="[a-zA-Z0-9_-]+" 
+                           pattern="[a-zA-Z0-9_-]{3,50}" 
+                           minlength="3" 
+                           maxlength="50"
                            placeholder="例如: payment-system, user-notifications">
-                    <small style="color: #666;">只能包含字母、数字、下划线和横线，用于生成接收URL</small>
+                    <small style="color: #666;">3-50字符，只能包含字母、数字、下划线和横线</small>
                 </div>
                 <div class="form-group">
                     <label for="webhookDescription">描述 *</label>
@@ -752,8 +841,10 @@ Authorization: Bearer YOUR_TOKEN
                 <div class="form-group">
                     <label for="webhookSecret">签名密钥（可选）</label>
                     <input type="password" id="webhookSecret" name="secret" 
-                           placeholder="用于验证webhook请求的HMAC签名">
-                    <small style="color: #666;">建议设置密钥以提高安全性，支持HMAC-SHA256签名验证</small>
+                           minlength="16" 
+                           maxlength="256"
+                           placeholder="用于验证webhook请求的HMAC签名（至少16字符）">
+                    <small style="color: #666;">可选：16-256字符，用于HMAC-SHA256签名验证</small>
                 </div>
                 
                 <!-- 预览URL -->
@@ -775,9 +866,23 @@ Authorization: Bearer YOUR_TOKEN
 
     <script>
         const API_BASE = window.location.origin;
-        const TOKEN = new URLSearchParams(window.location.search).get('token');
+        
+        // 获取JWT token - 优先从URL参数，其次从localStorage
+        let TOKEN = new URLSearchParams(window.location.search).get('token');
+        
+        if (TOKEN) {
+            // 如果URL中有token，保存到localStorage并清理URL
+            localStorage.setItem('admin_jwt_token', TOKEN);
+            const url = new URL(window.location);
+            url.searchParams.delete('token');
+            window.history.replaceState({}, document.title, url.toString());
+        } else {
+            // 从localStorage获取token
+            TOKEN = localStorage.getItem('admin_jwt_token');
+        }
         
         if (!TOKEN) {
+            // 如果没有token，跳转到登录页面
             window.location.href = `${API_BASE}/admin`;
         }
 
@@ -796,21 +901,33 @@ Authorization: Bearer YOUR_TOKEN
         }
 
         async function fetchWithAuth(url, options = {}) {
-            const response = await fetch(url, {
-                ...options,
-                headers: {
-                    'Authorization': `Bearer ${TOKEN}`,
-                    'Content-Type': 'application/json',
-                    ...options.headers
+            try {
+                const response = await fetch(url, {
+                    ...options,
+                    headers: {
+                        'Authorization': `Bearer ${TOKEN}`,
+                        'Content-Type': 'application/json',
+                        ...options.headers
+                    }
+                });
+                
+                if (response.status === 401 || response.status === 403) {
+                    console.warn('认证失败，清除token并跳转到登录页面');
+                    localStorage.removeItem('admin_jwt_token');
+                    window.location.href = `${API_BASE}/admin`;
+                    return;
                 }
-            });
-            
-            if (response.status === 401 || response.status === 403) {
-                window.location.href = `${API_BASE}/admin`;
-                return;
+                
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                return response;
+            } catch (error) {
+                console.error('API请求失败:', error);
+                throw error;
             }
-            
-            return response;
         }
 
         function showTab(tabName) {
@@ -852,6 +969,7 @@ Authorization: Bearer YOUR_TOKEN
 
         function logout() {
             if (confirm('确定要退出登录吗？')) {
+                localStorage.removeItem('admin_jwt_token');
                 window.location.href = `${API_BASE}/admin`;
             }
         }
@@ -923,6 +1041,13 @@ Authorization: Bearer YOUR_TOKEN
                             🟢 系统运行正常 | 运行时间: ${data.uptime || 'N/A'} | 内存使用: ${data.memory || 'N/A'}
                         </div>
                     `;
+                    
+                    // 延迟加载实时活动，确保DOM已经准备好
+                    setTimeout(() => {
+                        if (document.getElementById('recentActivityContainer')) {
+                            loadRecentActivity();
+                        }
+                    }, 100);
                 } else {
                     throw new Error(data.message || '加载失败');
                 }
@@ -935,6 +1060,222 @@ Authorization: Bearer YOUR_TOKEN
 
         function refreshStats() {
             loadOverview();
+        }
+
+        // 加载实时活动日志
+        let activityCurrentPage = 1;
+        let activityPageSize = 10;
+        let activityAutoRefreshInterval = null;
+
+        async function loadRecentActivity(page = 1) {
+            const container = document.getElementById('recentActivityContainer');
+            if (!container) {
+                console.log('recentActivityContainer not found');
+                return;
+            }
+            
+            const limitSelect = document.getElementById('recentActivityLimit');
+            if (!limitSelect) {
+                console.log('recentActivityLimit not found');
+                return;
+            }
+            
+            const currentLimit = parseInt(limitSelect.value) || 10;
+            activityPageSize = currentLimit;
+            activityCurrentPage = page;
+            
+            try {
+                container.innerHTML = '<div class="loading"><div class="spinner"></div><p>加载中...</p></div>';
+                
+                // 修改API调用以支持分页
+                const offset = (page - 1) * currentLimit;
+                const response = await fetchWithAuth(`${API_BASE}/webhook/logs?limit=${currentLimit}&offset=${offset}&sort=desc`);
+                const data = await response.json();
+                
+                if (response.ok && data.logs) {
+                    const logs = data.logs || [];
+                    const total = data.total || 0; // 获取总数用于分页计算
+                    
+                    if (logs.length === 0) {
+                        container.innerHTML = '<div style="text-align: center; color: #666; padding: 20px;">暂无活动记录</div>';
+                        updateActivityPagination(total, page); // 即使没有数据也要更新分页状态
+                        return;
+                    }
+                    
+                    const html = logs.map(log => {
+                        const timestamp = formatDate(log.timestamp);
+                        const timeAgo = getTimeAgo(log.timestamp);
+                        const typeClass = log.type.includes('ERROR') ? 'status-inactive' : 'status-active';
+                        
+                        let formattedData = '';
+                        if (log.type === 'RECEIVED') {
+                            const data = log.data || {};
+                            
+                            // 检查是否有解析后的信息
+                            if (data.eventType || data.eventTypeName) {
+                                // 使用解析后的信息
+                                const eventType = data.eventType || 'unknown';
+                                const eventName = data.eventTypeName || '无标题';
+                                const content = data.content || '无内容';
+                                const eventTime = data.eventTime || '未知时间';
+                                
+                                formattedData = `<strong>${eventName}</strong>`;
+                                
+                                if (content !== '无内容') {
+                                    const shortContent = content.length > 30 ? content.substring(0, 30) + '...' : content;
+                                    formattedData += `<br><span style="color: #666; font-size: 12px;">内容: ${shortContent}</span>`;
+                                }
+                                
+                                formattedData += `<br><span style="color: #999; font-size: 11px;">Webhook ID: ${data.webhookId || 'general'} · IP: ${data.ip || '未知'}</span>`;
+                            } else {
+                                // 回退到原有逻辑
+                                const payload = data.payload || {};
+                                
+                                // 智能提取事件信息
+                                const eventType = payload.eventType || payload.type || 'unknown';
+                                const eventName = payload.eventTypeName || payload.title || '无标题';
+                                
+                                // 构建更易读的显示格式
+                                if (eventType !== 'unknown' && eventName !== '无标题') {
+                                    // 显示完整的事件信息
+                                    formattedData = `<strong>${eventName}</strong>`;
+                                    
+                                    if (payload.data?.singlePageData?.title) {
+                                        formattedData += ` - ${payload.data.singlePageData.title}页面`;
+                                    }
+                                    
+                                    if (payload.data?.content) {
+                                        const content = payload.data.content;
+                                        const shortContent = content.length > 30 ? content.substring(0, 30) + '...' : content;
+                                        formattedData += `<br><span style="color: #666; font-size: 12px;">内容: ${shortContent}</span>`;
+                                    }
+                                    
+                                    formattedData += `<br><span style="color: #999; font-size: 11px;">Webhook ID: ${data.webhookId || 'general'} · IP: ${data.ip || '未知'}</span>`;
+                                } else {
+                                    // 回退到简单格式
+                                    formattedData = `Webhook ID: ${data.webhookId || 'general'} · IP: ${data.ip || '未知'}`;
+                                }
+                            }
+                        } else if (log.type === 'RECEIVER_CONFIGURED') {
+                            formattedData = `<strong>创建接收器</strong><br><span style="color: #666; font-size: 12px;">${log.data.id || '未知'} - ${log.data.description || '无描述'}</span>`;
+                        } else {
+                            formattedData = '系统事件';
+                        }
+                        
+                        return `
+                            <div style="padding: 12px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: flex-start;">
+                                <div style="flex: 1;">
+                                    <div style="margin-bottom: 5px; display: flex; align-items: flex-start; gap: 10px;">
+                                        <span class="status-badge ${typeClass}" style="font-size: 12px; flex-shrink: 0;">${log.type}</span>
+                                        <div style="color: #555; font-size: 14px; line-height: 1.4;">${formattedData}</div>
+                                    </div>
+                                    <div style="color: #999; font-size: 12px;">${timestamp}</div>
+                                </div>
+                                <div style="color: #999; font-size: 11px; margin-left: 15px; flex-shrink: 0;">${timeAgo}</div>
+                            </div>
+                        `;
+                    }).join('');
+                    
+                    container.innerHTML = html;
+                    updateActivityPagination(total, page); // 添加分页更新调用
+                } else {
+                    throw new Error(data.message || '加载失败');
+                }
+            } catch (error) {
+                console.error('loadRecentActivity error:', error);
+                container.innerHTML = '<div style="text-align: center; color: #f56565; padding: 20px;">加载失败: ' + error.message + '</div>';
+            }
+        }
+
+        function updateActivityPagination(total, currentPage) {
+            const pagination = document.getElementById('recentActivityPagination');
+            const pageInfo = document.getElementById('activityPageInfo');
+            const prevBtn = document.getElementById('prevActivityBtn');
+            const nextBtn = document.getElementById('nextActivityBtn');
+            
+            if (!pagination || !pageInfo || !prevBtn || !nextBtn) {
+                console.log('Activity pagination elements not found');
+                return;
+            }
+            
+            const totalPages = Math.ceil(total / activityPageSize);
+            
+            if (totalPages <= 1) {
+                pagination.style.display = 'none';
+                return;
+            }
+            
+            pagination.style.display = 'block';
+            pageInfo.textContent = `第 ${currentPage} 页，共 ${totalPages} 页 (总计 ${total} 条)`;
+            
+            prevBtn.disabled = currentPage <= 1;
+            nextBtn.disabled = currentPage >= totalPages;
+        }
+
+        function changeActivityPage(direction) {
+            const newPage = activityCurrentPage + direction;
+            if (newPage < 1) return;
+            loadRecentActivity(newPage);
+        }
+
+        // 时间差计算函数
+        function getTimeAgo(timestamp) {
+            const now = new Date();
+            const time = new Date(timestamp);
+            const diffInSeconds = Math.floor((now - time) / 1000);
+            
+            if (diffInSeconds < 60) return '刚刚';
+            if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}分钟前`;
+            if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}小时前`;
+            return `${Math.floor(diffInSeconds / 86400)}天前`;
+        }
+
+        // 自动刷新功能
+        function setupActivityAutoRefresh() {
+            console.log('setupActivityAutoRefresh called');
+            const checkbox = document.getElementById('autoRefreshActivity');
+            const limitSelect = document.getElementById('recentActivityLimit');
+            
+            if (!checkbox || !limitSelect) {
+                console.log('AutoRefresh elements not found');
+                return;
+            }
+            
+            function startAutoRefresh() {
+                if (activityAutoRefreshInterval) {
+                    clearInterval(activityAutoRefreshInterval);
+                }
+                activityAutoRefreshInterval = setInterval(() => {
+                    if (activityCurrentPage === 1) {
+                        loadRecentActivity(1);
+                    }
+                }, 5000);
+                console.log('Activity auto refresh started');
+            }
+            
+            function stopAutoRefresh() {
+                if (activityAutoRefreshInterval) {
+                    clearInterval(activityAutoRefreshInterval);
+                    activityAutoRefreshInterval = null;
+                }
+                console.log('Activity auto refresh stopped');
+            }
+            
+            checkbox.addEventListener('change', function() {
+                if (this.checked) {
+                    startAutoRefresh();
+                } else {
+                    stopAutoRefresh();
+                }
+            });
+            
+            limitSelect.addEventListener('change', function() {
+                loadRecentActivity(1);
+            });
+            
+            if (checkbox.checked) {
+                startAutoRefresh();
+            }
         }
 
         // 令牌管理相关函数
@@ -1241,22 +1582,62 @@ Authorization: Bearer YOUR_TOKEN
         }
 
         // 日志相关函数
-        async function loadLogs() {
+        let logsCurrentPage = 1;
+        let logsPageSize = 20;
+        let logsTotalPages = 1;
+        let logsAutoRefreshInterval = null;
+
+        async function loadLogs(page = 1, pageSize = null, applyFilters = true) {
             const loading = document.getElementById('logsLoading');
-            loading.style.display = 'block';
+            const pageSizeSelect = document.getElementById('logsPageSize');
+            
+            if (pageSize === null) {
+                pageSize = parseInt(pageSizeSelect.value);
+            }
+            
+            logsPageSize = pageSize;
+            logsCurrentPage = page;
+            
+            if (page === 1) {
+                loading.style.display = 'block';
+            }
             
             try {
-                const response = await fetchWithAuth(`${API_BASE}/webhook/logs?limit=50`);
+                const offset = (page - 1) * pageSize;
+                let url = `${API_BASE}/webhook/logs?limit=${pageSize}&offset=${offset}`;
+                
+                // 应用所有过滤器
+                if (applyFilters) {
+                    const typeFilter = document.getElementById('logsFilter').value;
+                    const levelFilter = document.getElementById('logsLevelFilter').value;
+                    const searchFilter = document.getElementById('logsSearchFilter').value;
+                    const dateFromFilter = document.getElementById('logsDateFrom').value;
+                    const dateToFilter = document.getElementById('logsDateTo').value;
+                    
+                    if (typeFilter) url += `&type=${encodeURIComponent(typeFilter)}`;
+                    if (levelFilter) url += `&level=${encodeURIComponent(levelFilter)}`;
+                    if (searchFilter) url += `&search=${encodeURIComponent(searchFilter)}`;
+                    if (dateFromFilter) url += `&date_from=${encodeURIComponent(dateFromFilter)}T00:00:00.000Z`;
+                    if (dateToFilter) url += `&date_to=${encodeURIComponent(dateToFilter)}T23:59:59.999Z`;
+                }
+                
+                console.log('加载日志 URL:', url);
+                const response = await fetchWithAuth(url);
                 const data = await response.json();
                 
                 if (response.ok) {
                     logs = data.logs || [];
+                    const total = data.total || logs.length;
+                    logsTotalPages = Math.ceil(total / pageSize);
                     renderLogs();
+                    updateLogsPagination(total, page);
                 } else {
                     throw new Error(data.message || '加载失败');
                 }
             } catch (error) {
                 showMessage('加载日志失败: ' + error.message);
+                const container = document.getElementById('logsContainer');
+                container.innerHTML = '<div style="text-align: center; color: #f56565; padding: 40px;">加载失败: ' + error.message + '</div>';
             } finally {
                 loading.style.display = 'none';
             }
@@ -1270,27 +1651,100 @@ Authorization: Bearer YOUR_TOKEN
                 return;
             }
             
-            container.innerHTML = logs.map(log => {
+            // 按时间戳降序排序（最新的在前面）
+            const sortedLogs = logs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            
+            container.innerHTML = sortedLogs.map(log => {
                 const timestamp = formatDate(log.timestamp);
+                const timeAgo = getTimeAgo(log.timestamp);
                 const typeClass = log.type.includes('ERROR') ? 'status-inactive' : 'status-active';
                 
                 // 格式化日志数据显示
                 let formattedData = '';
                 try {
                     if (log.data && typeof log.data === 'object') {
-                        // 美化webhook数据显示
-                        if (log.data.payload) {
-                            const payload = log.data.payload;
+                        // 统一显示格式
+                        if (log.type === 'RECEIVED') {
+                            const data = log.data;
+                            
+                            // 检查是否有解析后的信息（新格式）
+                            if (data.eventType || data.eventTypeName) {
+                                // 使用解析后的信息
+                                const eventType = data.eventType || 'unknown';
+                                const eventTitle = data.eventTypeName || '无标题';
+                                const eventContent = data.content || '无内容';
+                                const eventTime = data.eventTime || '未知时间';
+                                
+                                formattedData = `
+                                    <div><strong>Webhook ID:</strong> ${data.webhookId || 'general'}</div>
+                                    <div><strong>事件类型:</strong> ${eventType}</div>
+                                    <div><strong>事件名称:</strong> ${eventTitle}</div>
+                                    <div><strong>内容:</strong> ${eventContent}</div>
+                                    <div><strong>事件时间:</strong> ${eventTime}</div>
+                                    <div><strong>来源IP:</strong> ${data.ip || '未知'}</div>
+                                `;
+                            } else {
+                                // 兼容旧格式
+                                const payload = data.payload || {};
+                                
+                                // 智能提取事件信息
+                                let eventType = payload.eventType || payload.type || 'unknown';
+                                let eventTitle = payload.eventTypeName || payload.title || '无标题';
+                                let eventContent = payload.data?.content || payload.content || '无内容';
+                                
+                                // 如果有评论相关数据，显示更详细信息
+                                if (payload.data) {
+                                    const payloadData = payload.data;
+                                    if (payloadData.singlePageData?.title) {
+                                        eventTitle = `${eventTitle} - ${payloadData.singlePageData.title}页面`;
+                                    }
+                                    if (payloadData.content) {
+                                        eventContent = payloadData.content;
+                                    }
+                                    if (payloadData.replyComment?.content) {
+                                        eventContent += ` (回复: ${payloadData.replyComment.content})`;
+                                    }
+                                }
+                                
+                                formattedData = `
+                                    <div><strong>Webhook ID:</strong> ${data.webhookId || 'general'}</div>
+                                    <div><strong>事件类型:</strong> ${eventType}</div>
+                                    <div><strong>事件名称:</strong> ${eventTitle}</div>
+                                    <div><strong>内容:</strong> ${eventContent}</div>
+                                    ${payload.hookTime ? `<div><strong>事件时间:</strong> ${payload.hookTime}</div>` : ''}
+                                    <div><strong>来源IP:</strong> ${data.ip || '未知'}</div>
+                                `;
+                            }
+                        } else if (log.type === 'RECEIVER_CONFIGURED') {
                             formattedData = `
-                                <div><strong>Webhook ID:</strong> ${log.data.webhookId || 'general'}</div>
-                                <div><strong>类型:</strong> ${payload.type || 'unknown'}</div>
-                                <div><strong>标题:</strong> ${payload.title || '无标题'}</div>
-                                <div><strong>内容:</strong> ${payload.content || '无内容'}</div>
-                                ${payload.values ? `<div><strong>参数:</strong> ${JSON.stringify(payload.values)}</div>` : ''}
-                                <div><strong>来源IP:</strong> ${log.data.ip || '未知'}</div>
+                                <div><strong>操作:</strong> 创建接收器</div>
+                                <div><strong>接收器ID:</strong> ${log.data.id || '未知'}</div>
+                                <div><strong>描述:</strong> ${log.data.description || '无描述'}</div>
+                                <div><strong>URL:</strong> https://webhook.itdb.top/webhook/receive/${log.data.id}</div>
+                            `;
+                        } else if (log.type === 'RECEIVER_DELETED') {
+                            formattedData = `
+                                <div><strong>操作:</strong> 删除接收器</div>
+                                <div><strong>接收器ID:</strong> ${log.data.id || '未知'}</div>
+                            `;
+                        } else if (log.type === 'SENT') {
+                            formattedData = `
+                                <div><strong>操作:</strong> 发送Webhook</div>
+                                <div><strong>目标URL:</strong> ${log.data.url || '未知'}</div>
+                                <div><strong>状态:</strong> ${log.data.status || '未知'}</div>
+                                ${log.data.responseTime ? `<div><strong>响应时间:</strong> ${log.data.responseTime}ms</div>` : ''}
                             `;
                         } else {
-                            formattedData = JSON.stringify(log.data, null, 2);
+                            // 其他类型统一格式
+                            const entries = Object.entries(log.data);
+                            formattedData = entries.map(([key, value]) => {
+                                const displayKey = key === 'id' ? 'ID' : 
+                                                 key === 'url' ? 'URL' : 
+                                                 key === 'ip' ? '来源IP' :
+                                                 key === 'description' ? '描述' :
+                                                 key === 'webhookId' ? 'Webhook ID' : key;
+                                return `<div><strong>${displayKey}:</strong> ${value}</div>`;
+                            }).join('');
                         }
                     } else {
                         formattedData = String(log.data || '无数据');
@@ -1300,12 +1754,17 @@ Authorization: Bearer YOUR_TOKEN
                 }
                 
                 return `
-                    <div class="card" style="margin-bottom: 10px; padding: 15px;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                            <span class="status-badge ${typeClass}">${log.type}</span>
-                            <span style="color: #666; font-size: 14px;">${timestamp}</span>
+                    <div class="card" style="margin-bottom: 15px; padding: 20px; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 25px rgba(0,0,0,0.15)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 5px 20px rgba(0,0,0,0.1)'">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px;">
+                            <div>
+                                <span class="status-badge ${typeClass}" style="font-size: 13px;">${log.type}</span>
+                                <div style="color: #999; font-size: 12px; margin-top: 5px;">${timestamp} (${timeAgo})</div>
+                            </div>
+                            <div style="text-align: right; color: #999; font-size: 11px;">
+                                ID: ${log.id ? log.id.substring(0, 8) : 'N/A'}
+                            </div>
                         </div>
-                        <div style="font-size: 14px; color: #555; line-height: 1.5;">
+                        <div style="font-size: 14px; color: #555; line-height: 1.6;">
                             ${formattedData}
                         </div>
                     </div>
@@ -1313,8 +1772,153 @@ Authorization: Bearer YOUR_TOKEN
             }).join('');
         }
 
+        function updateLogsPagination(total, currentPage) {
+            const pagination = document.getElementById('logsPagination');
+            const pageInfo = document.getElementById('logsPageInfo');
+            const prevBtn = document.getElementById('prevLogsPageBtn');
+            const nextBtn = document.getElementById('nextLogsPageBtn');
+            const firstBtn = document.getElementById('firstLogsPageBtn');
+            const lastBtn = document.getElementById('lastLogsPageBtn');
+            
+            const totalPages = Math.ceil(total / logsPageSize);
+            logsTotalPages = totalPages;
+            
+            if (totalPages <= 1) {
+                pagination.style.display = 'none';
+                return;
+            }
+            
+            pagination.style.display = 'block';
+            pageInfo.textContent = `第 ${currentPage} 页，共 ${totalPages} 页 (总计 ${total} 条)`;
+            
+            prevBtn.disabled = currentPage <= 1;
+            nextBtn.disabled = currentPage >= totalPages;
+            firstBtn.disabled = currentPage <= 1;
+            lastBtn.disabled = currentPage >= totalPages;
+        }
+
+        function changeLogsPage(direction) {
+            const newPage = logsCurrentPage + direction;
+            if (newPage < 1 || newPage > logsTotalPages) return;
+            loadLogs(newPage);
+        }
+
+        function goToLogsPage(page) {
+            if (page === 'last') {
+                page = logsTotalPages;
+            }
+            if (page < 1 || page > logsTotalPages) return;
+            loadLogs(page);
+        }
+
+        // 设置日志自动刷新
+        function setupLogsAutoRefresh() {
+            console.log('setupLogsAutoRefresh called');
+            const checkbox = document.getElementById('autoRefreshLogs');
+            const pageSizeSelect = document.getElementById('logsPageSize'); 
+            const filterSelect = document.getElementById('logsFilter');
+            
+            if (!checkbox) {
+                console.log('Logs auto refresh checkbox not found');
+                return;
+            }
+            
+            function startLogsAutoRefresh() {
+                if (logsAutoRefreshInterval) {
+                    clearInterval(logsAutoRefreshInterval);
+                }
+                logsAutoRefreshInterval = setInterval(() => {
+                    if (logsCurrentPage === 1) {
+                        loadLogs(1);
+                    }
+                }, 10000);
+                console.log('Logs auto refresh started');
+            }
+            
+            function stopLogsAutoRefresh() {
+                if (logsAutoRefreshInterval) {
+                    clearInterval(logsAutoRefreshInterval);
+                    logsAutoRefreshInterval = null;
+                }
+                console.log('Logs auto refresh stopped');
+            }
+            
+            checkbox.addEventListener('change', function() {
+                if (this.checked) {
+                    startLogsAutoRefresh();
+                } else {
+                    stopLogsAutoRefresh();
+                }
+            });
+            
+            if (pageSizeSelect) {
+                pageSizeSelect.addEventListener('change', function() {
+                    loadLogs(1);
+                });
+            }
+            
+            if (filterSelect) {
+                filterSelect.addEventListener('change', function() {
+                    loadLogs(1);
+                });
+            }
+            
+            // 添加新的过滤器监听器
+            const levelFilterSelect = document.getElementById('logsLevelFilter');
+            const searchFilter = document.getElementById('logsSearchFilter');
+            const dateFromFilter = document.getElementById('logsDateFrom');
+            const dateToFilter = document.getElementById('logsDateTo');
+            const clearFiltersBtn = document.getElementById('clearLogsFilters');
+            
+            if (levelFilterSelect) {
+                levelFilterSelect.addEventListener('change', function() {
+                    loadLogs(1);
+                });
+            }
+            
+            // 搜索框监听（添加防抖）
+            if (searchFilter) {
+                let searchTimeout;
+                searchFilter.addEventListener('input', function() {
+                    clearTimeout(searchTimeout);
+                    searchTimeout = setTimeout(() => {
+                        loadLogs(1);
+                    }, 500); // 500ms防抖
+                });
+            }
+            
+            // 日期过滤器监听
+            if (dateFromFilter) {
+                dateFromFilter.addEventListener('change', function() {
+                    loadLogs(1);
+                });
+            }
+            
+            if (dateToFilter) {
+                dateToFilter.addEventListener('change', function() {
+                    loadLogs(1);
+                });
+            }
+            
+            // 清除过滤器按钮
+            if (clearFiltersBtn) {
+                clearFiltersBtn.addEventListener('click', function() {
+                    filterSelect.value = '';
+                    if (levelFilterSelect) levelFilterSelect.value = '';
+                    if (searchFilter) searchFilter.value = '';
+                    if (dateFromFilter) dateFromFilter.value = '';
+                    if (dateToFilter) dateToFilter.value = '';
+                    loadLogs(1);
+                });
+            }
+            
+            if (checkbox.checked) {
+                startLogsAutoRefresh();
+            }
+        }
+
         function refreshLogs() {
-            loadLogs();
+            loadLogs(1);
         }
 
         // 表单提交处理
@@ -1412,7 +2016,10 @@ Authorization: Bearer YOUR_TOKEN
                     closeWebhookModal();
                     loadWebhooks();
                 } else {
-                    if (result.errors && Array.isArray(result.errors)) {
+                    if (result.details && Array.isArray(result.details)) {
+                        const errorMessages = result.details.join(', ');
+                        throw new Error(`验证失败: ${errorMessages}`);
+                    } else if (result.errors && Array.isArray(result.errors)) {
                         const errorMessages = result.errors.map(err => err.msg || err.message).join(', ');
                         throw new Error(`验证失败: ${errorMessages}`);
                     } else {
@@ -1430,6 +2037,10 @@ Authorization: Bearer YOUR_TOKEN
         // 页面加载时初始化
         document.addEventListener('DOMContentLoaded', () => {
             loadOverview();
+            
+            // 设置自动刷新功能
+            setupActivityAutoRefresh();
+            setupLogsAutoRefresh();
             
             // 添加tab切换事件监听器
             document.querySelectorAll('.nav-tab').forEach(tab => {

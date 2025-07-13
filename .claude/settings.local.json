@@ -46,7 +46,23 @@
       "Bash(systemctl:*)",
       "Bash(pm2 status:*)",
       "Bash(git init:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git remote add:*)",
+      "Bash(git push:*)",
+      "Bash(git remote set-url:*)",
+      "Bash(npm restart)",
+      "Bash(grep:*)",
+      "Bash(sed:*)",
+      "Bash(./status_report.sh)",
+      "Bash(true)",
+      "Bash(npm run:*)",
+      "Bash(NODE_ENV=development npm run pm2:restart)",
+      "Bash(nginx:*)",
+      "Bash(/usr/local/openresty/bin/openresty:*)",
+      "Bash(ls:*)",
+      "Bash(openresty:*)",
+      "Bash(cat:*)"
     ],
     "deny": []
   }
